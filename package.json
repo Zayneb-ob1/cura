@@ -9,9 +9,12 @@
     "dev": "node scripts/next-runtime.mjs dev",
     "build": "node scripts/next-runtime.mjs build",
     "start": "node scripts/next-runtime.mjs start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "db:migrate": "node scripts/db-migrate.mjs",
+    "db:import-json": "node scripts/db-import-json.mjs"
   },
   "dependencies": {
+    "mysql2": "^3.23.4",
     "next": "16.3.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
