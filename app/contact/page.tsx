@@ -1,0 +1,145 @@
+"use client";
+
+import { FormEvent, useEffect, useState } from "react";
+import { SectionLabel } from "@/components/buttons";
+import { useLanguage } from "@/components/language-provider";
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
+import { hoursByLanguage } from "@/lib/content";
+
+const pageCopy = {
+  fr: {
+    contact: "Contact", title: "Où nous trouver.",
+    address: "Adresse", directions: "Ouvrir l’itinéraire", hours: "Horaires",
+    name: "Nom", email: "E-mail", subject: "Sujet", message: "Message",
+    subjects: { general: "Question générale", file: "Dossier", transfer: "Transfert de dossier" },
+    send: "Envoyer le message", response: "Nous répondons sous 24 h ouvrées.", sending: "Envoi en cours…", success: "Votre message a bien été envoyé. Nous vous répondrons sous 24 h ouvrées.", error: "Impossible d’envoyer votre message pour le moment. Veuillez réessayer.",
+    phoneLabel: "Téléphone", emailLabel: "E-mail", urgencyLabel: "Urgences", urgencyValue: "Appelez avant 10 h", faqTitle: "Questions fréquentes",
+    faqs: [
+      ["Faut-il être envoyé par un médecin ?", "Non. Vous pouvez prendre rendez-vous directement avec notre cabinet."],
+      ["J’ai peur du dentiste. Que faire ?", "Dites-le-nous lors de votre demande. Nous prévoyons le temps nécessaire pour vous recevoir calmement."],
+      ["Comment annuler ?", "Appelez-nous dès que possible, idéalement au moins 24 heures à l’avance."],
+      ["Soignez-vous les enfants ?", "Oui. Un agenda séparé est prévu pour les enfants, hors heures de pointe."],
+    ],
+  },
+  nl: {
+    contact: "Contact", title: "Waar u ons vindt.",
+    address: "Adres", directions: "Route openen", hours: "Openingsuren",
+    name: "Naam", email: "E-mail", subject: "Onderwerp", message: "Bericht",
+    subjects: { general: "Algemene vraag", file: "Dossier", transfer: "Dossieroverdracht" },
+    send: "Bericht versturen", response: "We antwoorden binnen 24 werkuren.", sending: "Bezig met versturen…", success: "Uw bericht is goed verzonden. We antwoorden binnen 24 werkuren.", error: "Uw bericht kan momenteel niet worden verzonden. Probeer het opnieuw.",
+    phoneLabel: "Telefoon", emailLabel: "E-mail", urgencyLabel: "Dringend", urgencyValue: "Bel vóór 10 uur", faqTitle: "Veelgestelde vragen",
+    faqs: [
+      ["Heb ik een verwijzing van een arts nodig?", "Nee. U kunt rechtstreeks een afspraak maken bij onze praktijk."],
+      ["Ik ben bang voor de tandarts. Wat nu?", "Vertel het ons bij uw aanvraag. We nemen de nodige tijd om u rustig te ontvangen."],
+      ["Hoe kan ik annuleren?", "Bel ons zo snel mogelijk, bij voorkeur minstens 24 uur vooraf."],
+      ["Behandelen jullie kinderen?", "Ja. Voor kinderen is er een aparte agenda buiten de piekuren."],
+    ],
+  },
+} as const;
+
+export default function ContactPage() {
+  const { language } = useLanguage();
+  const copy = pageCopy[language];
+  const hours = hoursByLanguage[language];
+  const [subject, setSubject] = useState("general");
+  const [submissionState, setSubmissionState] = useState<"idle" | "sending" | "success" | "error">("idle");
+
+  useEffect(() => {
+    const task = window.setTimeout(() => {
+      if (new URLSearchParams(window.location.search).get("subject") === "transfert-dossier") setSubject("transfer");
+    }, 0);
+    return () => window.clearTimeout(task);
+  }, []);
+
+  async function submitContact(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const selectedSubject = copy.subjects[subject as keyof typeof copy.subjects];
+
+    setSubmissionState("sending");
+
+    try {
+      const response = await fetch("/api/contact-submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: String(data.get("name") ?? "").trim(),
+          email: String(data.get("email") ?? "").trim(),
+          phone: String(data.get("phone") ?? "").trim(),
+          subject: selectedSubject,
+          message: String(data.get("message") ?? "").trim(),
+          language,
+        }),
+      });
+      if (!response.ok) throw new Error("Submission failed");
+
+      form.reset();
+      setSubject("general");
+      setSubmissionState("success");
+      try {
+        window.localStorage.setItem("cura-dashboard-update", String(Date.now()));
+      } catch {
+        // The submission is already saved; dashboard focus refresh remains available.
+      }
+    } catch {
+      setSubmissionState("error");
+    }
+  }
+
+  return (
+    <main className="contact-page page-paper">
+      <SiteHeader />
+      <section className="content-shell contact-page__intro">
+        <SectionLabel>{copy.contact}</SectionLabel>
+        <h1 className="editorial-title">{copy.title}</h1>
+      </section>
+      <section className="content-shell contact-layout">
+        <div className="contact-cards">
+          <article>
+            <SectionLabel>{copy.address}</SectionLabel>
+            <h2>Kuringenstraat 511<br />4030 Hasselt</h2>
+            <dl className="contact-details">
+              <div><dt>{copy.phoneLabel}</dt><dd><a href="tel:+3211000000">+32 (0)11 00 00 00</a></dd></div>
+              <div><dt>{copy.emailLabel}</dt><dd><a href="mailto:info@cura-tandarts.be">info@cura-tandarts.be</a></dd></div>
+              <div><dt>{copy.urgencyLabel}</dt><dd><a href="tel:+3211000000">{copy.urgencyValue}</a></dd></div>
+            </dl>
+            <a className="contact-directions" href="https://www.google.com/maps/dir/?api=1&destination=Kuringenstraat+511%2C+4030+Hasselt%2C+Belgium" target="_blank" rel="noreferrer">{copy.directions}<span aria-hidden="true">→</span></a>
+          </article>
+          <article>
+            <SectionLabel>{copy.hours}</SectionLabel>
+            {hours.map(([day, time]) => <p key={day}><span>{day}</span><b>{time}</b></p>)}
+          </article>
+        </div>
+        <div className="contact-right">
+          <form className="contact-form" onSubmit={submitContact} aria-busy={submissionState === "sending"}>
+            <div className="contact-form__grid">
+              <div className="form-field"><label htmlFor="contact-name">{copy.name}</label><input id="contact-name" name="name" required autoComplete="name" /></div>
+              <div className="form-field"><label htmlFor="contact-email">{copy.email}</label><input id="contact-email" name="email" type="email" required autoComplete="email" /></div>
+              <div className="form-field contact-form__subject"><label htmlFor="contact-subject">{copy.subject}</label><select id="contact-subject" name="subject" value={subject} onChange={(event) => setSubject(event.target.value)}><option value="general">{copy.subjects.general}</option><option value="file">{copy.subjects.file}</option><option value="transfer">{copy.subjects.transfer}</option></select></div>
+              <div className="form-field contact-form__message"><label htmlFor="contact-message">{copy.message}</label><textarea id="contact-message" name="message" required /></div>
+            </div>
+            <div className="contact-form__submit">
+              <button type="submit" className="button-link button-link--green" disabled={submissionState === "sending"}>{submissionState === "sending" ? copy.sending : copy.send}<span aria-hidden="true">→</span></button>
+              <p role="status" aria-live="polite">{submissionState === "idle" ? copy.response : copy[submissionState]}</p>
+            </div>
+          </form>
+
+          <section className="contact-faq" id="faq">
+            <SectionLabel>{copy.faqTitle}</SectionLabel>
+            <div>
+              {copy.faqs.map(([question, answer]) => (
+                <details key={question}>
+                  <summary>{question}<span aria-hidden="true">⌄</span></summary>
+                  <p>{answer}</p>
+                </details>
+              ))}
+            </div>
+          </section>
+        </div>
+      </section>
+      <SiteFooter />
+    </main>
+  );
+}
