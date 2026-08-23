@@ -23,13 +23,23 @@ export async function loadDatabaseEnvironment() {
   const missing = required.filter((name) => process.env[name] === undefined || process.env[name] === "");
   if (missing.length > 0) throw new Error(`Missing MySQL environment variables: ${missing.join(", ")}`);
 
+  const host = process.env.MYSQL_HOST.trim();
+  if (process.env.VERCEL && ["127.0.0.1", "localhost", "::1"].includes(host.toLowerCase())) {
+    throw new Error("MYSQL_HOST must be a remote MySQL hostname on Vercel; localhost is not reachable from Vercel Functions");
+  }
+
+  const port = Number.parseInt(process.env.MYSQL_PORT ?? "3306", 10);
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+    throw new Error("MYSQL_PORT must be an integer between 1 and 65535");
+  }
+
   const ca = process.env.MYSQL_SSL_CA?.replace(/\\n/g, "\n").trim();
   const sslEnabled = process.env.MYSQL_SSL === "true" || process.env.MYSQL_SSL === "required" || Boolean(ca);
   const connectTimeout = Number.parseInt(process.env.MYSQL_CONNECT_TIMEOUT_MS ?? "10000", 10);
 
   return {
-    host: process.env.MYSQL_HOST,
-    port: Number(process.env.MYSQL_PORT ?? 3306),
+    host,
+    port,
     user: process.env.MYSQL_USER,
     password: process.env.MYSQL_PASSWORD,
     database: process.env.MYSQL_DATABASE,

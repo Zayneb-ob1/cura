@@ -28,6 +28,9 @@ function createDatabasePool() {
   if (!host || !user || password === undefined || !database) {
     throw new Error("MySQL environment variables are not configured");
   }
+  if (process.env.VERCEL && ["127.0.0.1", "localhost", "::1"].includes(host.toLowerCase())) {
+    throw new Error("MYSQL_HOST must point to a remote MySQL server when deployed on Vercel");
+  }
 
   return mysql.createPool({
     host,
@@ -38,8 +41,8 @@ function createDatabasePool() {
     charset: "utf8mb4",
     dateStrings: true,
     waitForConnections: true,
-    connectionLimit: integerEnvironment("MYSQL_CONNECTION_LIMIT", 4, 1, 20),
-    maxIdle: integerEnvironment("MYSQL_MAX_IDLE", 2, 0, 20),
+    connectionLimit: integerEnvironment("MYSQL_CONNECTION_LIMIT", 2, 1, 20),
+    maxIdle: integerEnvironment("MYSQL_MAX_IDLE", 1, 0, 20),
     idleTimeout: integerEnvironment("MYSQL_IDLE_TIMEOUT_MS", 60_000, 1_000, 600_000),
     connectTimeout: integerEnvironment("MYSQL_CONNECT_TIMEOUT_MS", 10_000, 1_000, 60_000),
     enableKeepAlive: true,
