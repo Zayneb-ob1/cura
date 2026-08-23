@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import styles from "./admin.module.css";
 
 type DataSection = "contacts" | "appointments" | "reviews" | "doctors";
-type AdminSection = "overview" | DataSection | "site";
+type AdminSection = "overview" | DataSection | "forms" | "site";
 type AdminItem = Record<string, unknown> & { id: string | number };
 
 type OverviewData = Record<DataSection, AdminItem[]>;
@@ -30,14 +30,55 @@ type DoctorDraft = {
   published: boolean;
 };
 
+type FormFieldConfig = {
+  key: string;
+  labelFr: string;
+  labelNl: string;
+  placeholderFr: string;
+  placeholderNl: string;
+  required: boolean;
+  visible: boolean;
+  order: number;
+};
+
+type FormConfig = {
+  slug: string;
+  enabled: boolean;
+  titleFr: string;
+  titleNl: string;
+  descriptionFr: string;
+  descriptionNl: string;
+  submitLabelFr: string;
+  submitLabelNl: string;
+  fields: FormFieldConfig[];
+};
+
+type FormConfigs = {
+  contact: FormConfig;
+  appointment: FormConfig;
+};
+
+type FormType = keyof FormConfigs;
+
 const sections: Array<{ id: AdminSection; label: string; icon: string }> = [
   { id: "overview", label: "Vue d’ensemble", icon: "⌂" },
   { id: "contacts", label: "Messages", icon: "✉" },
   { id: "appointments", label: "Rendez-vous", icon: "◷" },
   { id: "reviews", label: "Avis", icon: "☆" },
   { id: "doctors", label: "Cabinet / Équipe", icon: "+" },
+  { id: "forms", label: "Formulaires", icon: "▤" },
   { id: "site", label: "Pages du site", icon: "↗" },
 ];
+
+const formLabels: Record<FormType, { name: string; href: string }> = {
+  contact: { name: "Formulaire de contact", href: "/contact" },
+  appointment: { name: "Formulaire de rendez-vous", href: "/rendez-vous" },
+};
+
+const lockedFormFields: Record<FormType, ReadonlySet<string>> = {
+  contact: new Set(["name", "email", "subject", "message"]),
+  appointment: new Set(["firstName", "lastName", "email", "phone", "day", "consent"]),
+};
 
 const sitePages = [
   ["Accueil", "/"],
@@ -113,6 +154,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [credentials, setCredentials] = useState({ username: "", password: "" });
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState<string | number | null>(null);
@@ -120,10 +162,12 @@ export default function AdminPage() {
   const [showDoctorForm, setShowDoctorForm] = useState(false);
   const [editingDoctorId, setEditingDoctorId] = useState<string | number | null>(null);
   const [doctorDraft, setDoctorDraft] = useState<DoctorDraft>(emptyDoctor);
+  const [formConfigs, setFormConfigs] = useState<FormConfigs | null>(null);
 
   const loadItems = useCallback(async (section: AdminSection) => {
     setLoading(true);
     setError("");
+    setNotice("");
 
     try {
       if (section === "overview") {
@@ -173,6 +217,28 @@ export default function AdminPage() {
         return;
       }
 
+      if (section === "forms") {
+        const response = await fetch("/api/admin/forms", {
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        if (response.status === 401) {
+          setAuthenticated(false);
+          setFormConfigs(null);
+          return;
+        }
+        if (!response.ok) throw new Error(await getErrorMessage(response));
+
+        const payload = (await response.json()) as { forms?: FormConfigs };
+        if (!payload.forms?.contact || !payload.forms?.appointment) {
+          throw new Error("Configuration des formulaires incomplète.");
+        }
+        setFormConfigs(payload.forms);
+        setItems([]);
+        setAuthenticated(true);
+        return;
+      }
+
       const response = await fetch(`/api/admin/${section}`, {
         credentials: "same-origin",
         cache: "no-store",
@@ -202,7 +268,7 @@ export default function AdminPage() {
   }, [activeSection, loadItems]);
 
   useEffect(() => {
-    if (!authenticated) return;
+    if (!authenticated || activeSection === "forms") return;
 
     const refreshDashboard = () => void loadItems(activeSection);
     const handleStorage = (event: StorageEvent) => {
@@ -420,6 +486,57 @@ export default function AdminPage() {
     }
   }
 
+  function updateFormConfig(formType: FormType, fields: Partial<FormConfig>) {
+    setFormConfigs((current) => current
+      ? { ...current, [formType]: { ...current[formType], ...fields } }
+      : current);
+    setNotice("");
+  }
+
+  function updateFormField(formType: FormType, key: string, fields: Partial<FormFieldConfig>) {
+    setFormConfigs((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        [formType]: {
+          ...current[formType],
+          fields: current[formType].fields.map((field) => field.key === key ? { ...field, ...fields } : field),
+        },
+      };
+    });
+    setNotice("");
+  }
+
+  async function saveFormConfig(event: FormEvent<HTMLFormElement>, formType: FormType) {
+    event.preventDefault();
+    if (!formConfigs) return;
+    setSaving(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const response = await fetch("/api/admin/forms", {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formType, ...formConfigs[formType] }),
+      });
+      if (response.status === 401) {
+        setAuthenticated(false);
+        return;
+      }
+      if (!response.ok) throw new Error(await getErrorMessage(response));
+
+      const payload = (await response.json()) as { form?: FormConfig };
+      if (payload.form) updateFormConfig(formType, payload.form);
+      setNotice(`${formLabels[formType].name} enregistré.`);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Enregistrement impossible.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const totalItems = overviewData.contacts.length + overviewData.appointments.length + overviewData.reviews.length + overviewData.doctors.length;
   const newMessages = overviewData.contacts.filter((item) => asText(item.status, "new") === "new").length;
   const pendingAppointments = overviewData.appointments.filter((item) => asText(item.status, "pending") === "pending").length;
@@ -554,6 +671,8 @@ export default function AdminPage() {
                   ? "Chargement…"
                   : activeSection === "overview"
                     ? `${totalItems} éléments gérés`
+                    : activeSection === "forms"
+                      ? `${formConfigs ? 2 : 0} formulaires configurés`
                     : activeSection === "site"
                       ? `${sitePages.length} pages disponibles`
                       : `${items.length} élément${items.length === 1 ? "" : "s"}`}
@@ -577,6 +696,7 @@ export default function AdminPage() {
           </div>
 
           {error && <p className={styles.error} role="alert">{error}</p>}
+          {notice && <p className={styles.notice} role="status">{notice}</p>}
 
           {activeSection === "reviews" && showReviewForm && (
             <form className={styles.reviewForm} onSubmit={saveReview}>
@@ -747,6 +867,10 @@ export default function AdminPage() {
                         <strong>Gérer l’équipe</strong>
                         <span>Ajouter ou modifier les médecins</span>
                       </button>
+                      <button type="button" onClick={() => setActiveSection("forms")}>
+                        <strong>Modifier les formulaires</strong>
+                        <span>Gérer les textes et les champs publics</span>
+                      </button>
                       <button type="button" onClick={() => setActiveSection("site")}>
                         <strong>Voir les pages</strong>
                         <span>Ouvrir une page du site</span>
@@ -755,6 +879,140 @@ export default function AdminPage() {
                   </aside>
                 </div>
               </>
+            )
+          ) : activeSection === "forms" ? (
+            loading ? (
+              <div className={styles.emptyState}>Chargement des formulaires…</div>
+            ) : !formConfigs ? (
+              <div className={styles.emptyState}>Aucune configuration disponible.</div>
+            ) : (
+              <div className={styles.formManager}>
+                {(["contact", "appointment"] as FormType[]).map((formType) => {
+                  const config = formConfigs[formType];
+                  const meta = formLabels[formType];
+                  return (
+                    <form className={styles.formConfigCard} key={formType} onSubmit={(event) => void saveFormConfig(event, formType)}>
+                      <div className={styles.formConfigHeader}>
+                        <div>
+                          <p className={styles.eyebrow}>{config.slug}</p>
+                          <h2>{meta.name}</h2>
+                          <a href={meta.href} target="_blank" rel="noreferrer">Voir la page ↗</a>
+                        </div>
+                        <label className={styles.formSwitch}>
+                          <input
+                            type="checkbox"
+                            checked={config.enabled}
+                            onChange={(event) => updateFormConfig(formType, { enabled: event.target.checked })}
+                          />
+                          Formulaire actif
+                        </label>
+                      </div>
+
+                      <div className={styles.formSettingsGrid}>
+                        <label>
+                          Titre en français
+                          <input required value={config.titleFr} onChange={(event) => updateFormConfig(formType, { titleFr: event.target.value })} />
+                        </label>
+                        <label>
+                          Titel in het Nederlands
+                          <input required value={config.titleNl} onChange={(event) => updateFormConfig(formType, { titleNl: event.target.value })} />
+                        </label>
+                        <label>
+                          Introduction en français
+                          <textarea rows={3} value={config.descriptionFr} onChange={(event) => updateFormConfig(formType, { descriptionFr: event.target.value })} />
+                        </label>
+                        <label>
+                          Introductie in het Nederlands
+                          <textarea rows={3} value={config.descriptionNl} onChange={(event) => updateFormConfig(formType, { descriptionNl: event.target.value })} />
+                        </label>
+                        <label>
+                          Bouton en français
+                          <input required value={config.submitLabelFr} onChange={(event) => updateFormConfig(formType, { submitLabelFr: event.target.value })} />
+                        </label>
+                        <label>
+                          Knop in het Nederlands
+                          <input required value={config.submitLabelNl} onChange={(event) => updateFormConfig(formType, { submitLabelNl: event.target.value })} />
+                        </label>
+                      </div>
+
+                      <div className={styles.fieldsHeading}>
+                        <div>
+                          <h3>Champs du formulaire</h3>
+                          <p>Les clés techniques restent fixes pour conserver les envois existants.</p>
+                        </div>
+                        <span>{config.fields.length} champs</span>
+                      </div>
+
+                      <div className={styles.formFields}>
+                        {[...config.fields].sort((a, b) => a.order - b.order).map((field) => (
+                          <article className={styles.formFieldCard} key={field.key}>
+                            <div className={styles.formFieldHeader}>
+                              <div className={styles.fieldKey}>
+                                <code>{field.key}</code>
+                                {lockedFormFields[formType].has(field.key) && <span>Champ essentiel</span>}
+                              </div>
+                              <div className={styles.fieldOptions}>
+                                <label>
+                                  <input
+                                    type="checkbox"
+                                    checked={field.visible}
+                                    disabled={lockedFormFields[formType].has(field.key)}
+                                    onChange={(event) => updateFormField(formType, field.key, { visible: event.target.checked })}
+                                  />
+                                  Visible
+                                </label>
+                                <label>
+                                  <input
+                                    type="checkbox"
+                                    checked={field.required}
+                                    disabled={lockedFormFields[formType].has(field.key)}
+                                    onChange={(event) => updateFormField(formType, field.key, { required: event.target.checked })}
+                                  />
+                                  Obligatoire
+                                </label>
+                              </div>
+                            </div>
+                            <div className={styles.fieldEditGrid}>
+                              <label>
+                                Libellé FR
+                                <input required value={field.labelFr} onChange={(event) => updateFormField(formType, field.key, { labelFr: event.target.value })} />
+                              </label>
+                              <label>
+                                Libellé NL
+                                <input required value={field.labelNl} onChange={(event) => updateFormField(formType, field.key, { labelNl: event.target.value })} />
+                              </label>
+                              <label>
+                                Placeholder FR
+                                <input value={field.placeholderFr} onChange={(event) => updateFormField(formType, field.key, { placeholderFr: event.target.value })} />
+                              </label>
+                              <label>
+                                Placeholder NL
+                                <input value={field.placeholderNl} onChange={(event) => updateFormField(formType, field.key, { placeholderNl: event.target.value })} />
+                              </label>
+                              <label className={styles.orderField}>
+                                Ordre
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={field.order}
+                                  onChange={(event) => updateFormField(formType, field.key, { order: Number(event.target.value) })}
+                                />
+                              </label>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+
+                      <div className={styles.formConfigActions}>
+                        <a className={styles.secondaryButton} href={meta.href} target="_blank" rel="noreferrer">Prévisualiser</a>
+                        <button className={styles.primaryButton} type="submit" disabled={saving}>
+                          {saving ? "Enregistrement…" : "Enregistrer le formulaire"}
+                        </button>
+                      </div>
+                    </form>
+                  );
+                })}
+              </div>
             )
           ) : activeSection === "site" ? (
             <div className={styles.siteGrid}>

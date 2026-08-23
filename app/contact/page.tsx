@@ -38,12 +38,86 @@ const pageCopy = {
   },
 } as const;
 
+type Language = "fr" | "nl";
+
+type EditableField = {
+  key: string;
+  labelFr: string;
+  labelNl: string;
+  placeholderFr: string;
+  placeholderNl: string;
+  required: boolean;
+  visible: boolean;
+  order: number;
+};
+
+type EditableForm = {
+  slug: string;
+  titleFr: string;
+  titleNl: string;
+  fields: EditableField[];
+};
+
+const contactFieldKeys = new Set(["name", "email", "phone", "subject", "message"]);
+
+function localizedFieldValue(field: EditableField, language: Language, property: "label" | "placeholder") {
+  if (property === "label") return language === "fr" ? field.labelFr : field.labelNl;
+  return language === "fr" ? field.placeholderFr : field.placeholderNl;
+}
+
+function isEditableForm(value: unknown): value is EditableForm {
+  if (!value || typeof value !== "object") return false;
+  const form = value as Partial<EditableForm>;
+  return typeof form.slug === "string" && Array.isArray(form.fields) && form.fields.every((field) => (
+    field &&
+    typeof field === "object" &&
+    typeof field.key === "string" &&
+    typeof field.labelFr === "string" &&
+    typeof field.labelNl === "string" &&
+    typeof field.placeholderFr === "string" &&
+    typeof field.placeholderNl === "string" &&
+    typeof field.required === "boolean" &&
+    typeof field.visible === "boolean" &&
+    typeof field.order === "number"
+  ));
+}
+
 export default function ContactPage() {
   const { language } = useLanguage();
   const copy = pageCopy[language];
   const hours = hoursByLanguage[language];
   const [subject, setSubject] = useState("general");
   const [submissionState, setSubmissionState] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [formConfig, setFormConfig] = useState<EditableForm | null>(null);
+
+  const configuredFields = formConfig
+    ? [...formConfig.fields]
+        .filter((field) => field.visible && contactFieldKeys.has(field.key))
+        .sort((first, second) => first.order - second.order)
+    : null;
+
+  const fieldLabel = (field: EditableField, fallback: string) => localizedFieldValue(field, language, "label") || fallback;
+  const fieldPlaceholder = (field: EditableField) => localizedFieldValue(field, language, "placeholder") || undefined;
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadFormConfig() {
+      try {
+        const response = await fetch("/api/forms/contact", { cache: "no-store" });
+        if (!response.ok) return;
+        const result = (await response.json()) as { form?: unknown };
+        if (active && isEditableForm(result.form)) setFormConfig(result.form);
+      } catch {
+        // The static form remains available when the editable configuration cannot be loaded.
+      }
+    }
+
+    void loadFormConfig();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const task = window.setTimeout(() => {
@@ -93,7 +167,7 @@ export default function ContactPage() {
       <SiteHeader />
       <section className="content-shell contact-page__intro">
         <SectionLabel>{copy.contact}</SectionLabel>
-        <h1 className="editorial-title">{copy.title}</h1>
+        <h1 className="editorial-title">{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || copy.title}</h1>
       </section>
       <section className="content-shell contact-layout">
         <div className="contact-cards">
@@ -115,10 +189,21 @@ export default function ContactPage() {
         <div className="contact-right">
           <form className="contact-form" onSubmit={submitContact} aria-busy={submissionState === "sending"}>
             <div className="contact-form__grid">
-              <div className="form-field"><label htmlFor="contact-name">{copy.name}</label><input id="contact-name" name="name" required autoComplete="name" /></div>
-              <div className="form-field"><label htmlFor="contact-email">{copy.email}</label><input id="contact-email" name="email" type="email" required autoComplete="email" /></div>
-              <div className="form-field contact-form__subject"><label htmlFor="contact-subject">{copy.subject}</label><select id="contact-subject" name="subject" value={subject} onChange={(event) => setSubject(event.target.value)}><option value="general">{copy.subjects.general}</option><option value="file">{copy.subjects.file}</option><option value="transfer">{copy.subjects.transfer}</option></select></div>
-              <div className="form-field contact-form__message"><label htmlFor="contact-message">{copy.message}</label><textarea id="contact-message" name="message" required /></div>
+              {configuredFields ? configuredFields.map((field) => {
+                if (field.key === "name") return <div className="form-field" key={field.key}><label htmlFor="contact-name">{fieldLabel(field, copy.name)}</label><input id="contact-name" name="name" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="name" /></div>;
+                if (field.key === "email") return <div className="form-field" key={field.key}><label htmlFor="contact-email">{fieldLabel(field, copy.email)}</label><input id="contact-email" name="email" type="email" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="email" /></div>;
+                if (field.key === "phone") return <div className="form-field" key={field.key}><label htmlFor="contact-phone">{fieldLabel(field, copy.phoneLabel)}</label><input id="contact-phone" name="phone" type="tel" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="tel" /></div>;
+                if (field.key === "subject") return <div className="form-field contact-form__subject" key={field.key}><label htmlFor="contact-subject">{fieldLabel(field, copy.subject)}</label><select id="contact-subject" name="subject" required={field.required} value={subject} onChange={(event) => setSubject(event.target.value)}><option value="general">{copy.subjects.general}</option><option value="file">{copy.subjects.file}</option><option value="transfer">{copy.subjects.transfer}</option></select></div>;
+                if (field.key === "message") return <div className="form-field contact-form__message" key={field.key}><label htmlFor="contact-message">{fieldLabel(field, copy.message)}</label><textarea id="contact-message" name="message" required={field.required} placeholder={fieldPlaceholder(field)} /></div>;
+                return null;
+              }) : (
+                <>
+                  <div className="form-field"><label htmlFor="contact-name">{copy.name}</label><input id="contact-name" name="name" required autoComplete="name" /></div>
+                  <div className="form-field"><label htmlFor="contact-email">{copy.email}</label><input id="contact-email" name="email" type="email" required autoComplete="email" /></div>
+                  <div className="form-field contact-form__subject"><label htmlFor="contact-subject">{copy.subject}</label><select id="contact-subject" name="subject" value={subject} onChange={(event) => setSubject(event.target.value)}><option value="general">{copy.subjects.general}</option><option value="file">{copy.subjects.file}</option><option value="transfer">{copy.subjects.transfer}</option></select></div>
+                  <div className="form-field contact-form__message"><label htmlFor="contact-message">{copy.message}</label><textarea id="contact-message" name="message" required /></div>
+                </>
+              )}
             </div>
             <div className="contact-form__submit">
               <button type="submit" className="button-link button-link--green" disabled={submissionState === "sending"}>{submissionState === "sending" ? copy.sending : copy.send}<span aria-hidden="true">→</span></button>

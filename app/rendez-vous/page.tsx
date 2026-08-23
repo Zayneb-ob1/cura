@@ -24,6 +24,52 @@ const pageCopy = {
   },
 } as const;
 
+type Language = "fr" | "nl";
+
+type EditableField = {
+  key: string;
+  labelFr: string;
+  labelNl: string;
+  placeholderFr: string;
+  placeholderNl: string;
+  required: boolean;
+  visible: boolean;
+  order: number;
+};
+
+type EditableForm = {
+  slug: string;
+  titleFr: string;
+  titleNl: string;
+  fields: EditableField[];
+};
+
+const appointmentFieldKeys = new Set(["care", "day", "time", "firstName", "lastName", "email", "phone", "note", "consent"]);
+const appointmentDetailsKeys = new Set(["care", "day", "time"]);
+const patientDetailsKeys = new Set(["firstName", "lastName", "email", "phone", "note"]);
+
+function localizedFieldValue(field: EditableField, language: Language, property: "label" | "placeholder") {
+  if (property === "label") return language === "fr" ? field.labelFr : field.labelNl;
+  return language === "fr" ? field.placeholderFr : field.placeholderNl;
+}
+
+function isEditableForm(value: unknown): value is EditableForm {
+  if (!value || typeof value !== "object") return false;
+  const form = value as Partial<EditableForm>;
+  return typeof form.slug === "string" && Array.isArray(form.fields) && form.fields.every((field) => (
+    field &&
+    typeof field === "object" &&
+    typeof field.key === "string" &&
+    typeof field.labelFr === "string" &&
+    typeof field.labelNl === "string" &&
+    typeof field.placeholderFr === "string" &&
+    typeof field.placeholderNl === "string" &&
+    typeof field.required === "boolean" &&
+    typeof field.visible === "boolean" &&
+    typeof field.order === "number"
+  ));
+}
+
 export default function AppointmentPage() {
   const { language } = useLanguage();
   const copy = pageCopy[language];
@@ -31,6 +77,38 @@ export default function AppointmentPage() {
   const treatments = treatmentsByLanguage[language];
   const [care, setCare] = useState("");
   const [submissionState, setSubmissionState] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [formConfig, setFormConfig] = useState<EditableForm | null>(null);
+
+  const configuredFields = formConfig
+    ? [...formConfig.fields]
+        .filter((field) => field.visible && appointmentFieldKeys.has(field.key))
+        .sort((first, second) => first.order - second.order)
+    : null;
+  const appointmentFields = configuredFields?.filter((field) => appointmentDetailsKeys.has(field.key));
+  const patientFields = configuredFields?.filter((field) => patientDetailsKeys.has(field.key));
+  const consentField = configuredFields?.find((field) => field.key === "consent");
+  const fieldLabel = (field: EditableField, fallback: string) => localizedFieldValue(field, language, "label") || fallback;
+  const fieldPlaceholder = (field: EditableField) => localizedFieldValue(field, language, "placeholder") || undefined;
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadFormConfig() {
+      try {
+        const response = await fetch("/api/forms/appointment", { cache: "no-store" });
+        if (!response.ok) return;
+        const result = (await response.json()) as { form?: unknown };
+        if (active && isEditableForm(result.form)) setFormConfig(result.form);
+      } catch {
+        // The static form remains available when the editable configuration cannot be loaded.
+      }
+    }
+
+    void loadFormConfig();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const task = window.setTimeout(() => {
@@ -81,11 +159,23 @@ export default function AppointmentPage() {
     }
   }
 
+  function renderAppointmentField(field: EditableField) {
+    if (field.key === "care") return <div className="form-field appointment-form__wide" key={field.key}><label htmlFor="care">{fieldLabel(field, copy.care)}</label><select id="care" name="care" required={field.required} value={care} onChange={(event) => setCare(event.target.value)}><option value="">{fieldPlaceholder(field) || copy.unknown}</option>{treatments.map((item) => <option key={item.number} value={item.number}>{item.name}</option>)}</select></div>;
+    if (field.key === "day") return <div className="form-field" key={field.key}><label htmlFor="preferred-day">{fieldLabel(field, copy.day)}</label><input id="preferred-day" name="day" type="date" required={field.required} /></div>;
+    if (field.key === "time") return <div className="form-field" key={field.key}><label htmlFor="preferred-time">{fieldLabel(field, copy.time)}</label><select id="preferred-time" name="time" required={field.required}><option>{copy.morning}</option><option>{copy.afternoon}</option><option>{copy.any}</option></select></div>;
+    if (field.key === "firstName") return <div className="form-field" key={field.key}><label htmlFor="first-name">{fieldLabel(field, copy.firstName)}</label><input id="first-name" name="firstName" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="given-name" /></div>;
+    if (field.key === "lastName") return <div className="form-field" key={field.key}><label htmlFor="last-name">{fieldLabel(field, copy.lastName)}</label><input id="last-name" name="lastName" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="family-name" /></div>;
+    if (field.key === "email") return <div className="form-field" key={field.key}><label htmlFor="appointment-email">{fieldLabel(field, copy.email)}</label><input id="appointment-email" name="email" type="email" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="email" /></div>;
+    if (field.key === "phone") return <div className="form-field" key={field.key}><label htmlFor="appointment-phone">{fieldLabel(field, copy.phone)}</label><input id="appointment-phone" name="phone" type="tel" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="tel" /></div>;
+    if (field.key === "note") return <div className="form-field appointment-form__wide" key={field.key}><label htmlFor="note">{fieldLabel(field, copy.note)}</label><textarea id="note" name="note" required={field.required} placeholder={fieldPlaceholder(field) || copy.placeholder} /></div>;
+    return null;
+  }
+
   return (
     <main className="appointment-page page-paper">
       <SiteHeader />
       <section className="content-shell appointment-page__intro">
-        <SectionLabel>{copy.label}</SectionLabel><h1 className="editorial-title">{copy.title}</h1><p>{copy.intro}</p>
+        <SectionLabel>{copy.label}</SectionLabel><h1 className="editorial-title">{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || copy.title}</h1><p>{copy.intro}</p>
       </section>
       <section className="content-shell appointment-layout">
         <form className="appointment-form" onSubmit={submitAppointment} aria-busy={submissionState === "sending"}>
@@ -94,9 +184,13 @@ export default function AppointmentPage() {
             <div>
               <SectionLabel>{copy.appointment}</SectionLabel>
               <div className="appointment-form__grid">
-                <div className="form-field appointment-form__wide"><label htmlFor="care">{copy.care}</label><select id="care" name="care" value={care} onChange={(event) => setCare(event.target.value)}><option value="">{copy.unknown}</option>{treatments.map((item) => <option key={item.number} value={item.number}>{item.name}</option>)}</select></div>
-                <div className="form-field"><label htmlFor="preferred-day">{copy.day}</label><input id="preferred-day" name="day" type="date" required /></div>
-                <div className="form-field"><label htmlFor="preferred-time">{copy.time}</label><select id="preferred-time" name="time"><option>{copy.morning}</option><option>{copy.afternoon}</option><option>{copy.any}</option></select></div>
+                {appointmentFields ? appointmentFields.map(renderAppointmentField) : (
+                  <>
+                    <div className="form-field appointment-form__wide"><label htmlFor="care">{copy.care}</label><select id="care" name="care" value={care} onChange={(event) => setCare(event.target.value)}><option value="">{copy.unknown}</option>{treatments.map((item) => <option key={item.number} value={item.number}>{item.name}</option>)}</select></div>
+                    <div className="form-field"><label htmlFor="preferred-day">{copy.day}</label><input id="preferred-day" name="day" type="date" required /></div>
+                    <div className="form-field"><label htmlFor="preferred-time">{copy.time}</label><select id="preferred-time" name="time"><option>{copy.morning}</option><option>{copy.afternoon}</option><option>{copy.any}</option></select></div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -105,15 +199,19 @@ export default function AppointmentPage() {
             <div>
               <SectionLabel>{copy.details}</SectionLabel>
               <div className="appointment-form__grid">
-                <div className="form-field"><label htmlFor="first-name">{copy.firstName}</label><input id="first-name" name="firstName" required autoComplete="given-name" /></div>
-                <div className="form-field"><label htmlFor="last-name">{copy.lastName}</label><input id="last-name" name="lastName" required autoComplete="family-name" /></div>
-                <div className="form-field"><label htmlFor="appointment-email">{copy.email}</label><input id="appointment-email" name="email" type="email" required autoComplete="email" /></div>
-                <div className="form-field"><label htmlFor="appointment-phone">{copy.phone}</label><input id="appointment-phone" name="phone" type="tel" required autoComplete="tel" /></div>
-                <div className="form-field appointment-form__wide"><label htmlFor="note">{copy.note}</label><textarea id="note" name="note" placeholder={copy.placeholder} /></div>
+                {patientFields ? patientFields.map(renderAppointmentField) : (
+                  <>
+                    <div className="form-field"><label htmlFor="first-name">{copy.firstName}</label><input id="first-name" name="firstName" required autoComplete="given-name" /></div>
+                    <div className="form-field"><label htmlFor="last-name">{copy.lastName}</label><input id="last-name" name="lastName" required autoComplete="family-name" /></div>
+                    <div className="form-field"><label htmlFor="appointment-email">{copy.email}</label><input id="appointment-email" name="email" type="email" required autoComplete="email" /></div>
+                    <div className="form-field"><label htmlFor="appointment-phone">{copy.phone}</label><input id="appointment-phone" name="phone" type="tel" required autoComplete="tel" /></div>
+                    <div className="form-field appointment-form__wide"><label htmlFor="note">{copy.note}</label><textarea id="note" name="note" placeholder={copy.placeholder} /></div>
+                  </>
+                )}
               </div>
             </div>
           </div>
-          <label className="appointment-consent"><input type="checkbox" name="consent" required /> {copy.consent}</label>
+          {configuredFields ? consentField && <label className="appointment-consent"><input type="checkbox" name="consent" required={consentField.required} /> {fieldLabel(consentField, copy.consent)}</label> : <label className="appointment-consent"><input type="checkbox" name="consent" required /> {copy.consent}</label>}
           <button type="submit" className="button-link button-link--green" disabled={submissionState === "sending"}>{submissionState === "sending" ? copy.sending : copy.send}</button>
           {submissionState !== "idle" && <p className="form-status" role="status" aria-live="polite">{copy[submissionState]}</p>}
         </form>

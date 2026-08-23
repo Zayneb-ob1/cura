@@ -6,9 +6,9 @@
     "node": ">=20.9.0 <26"
   },
   "scripts": {
-    "dev": "node scripts/next-runtime.mjs dev",
+    "dev": "node scripts/db-local-start.mjs && node scripts/next-runtime.mjs dev",
     "build": "node scripts/next-runtime.mjs build",
-    "start": "node scripts/next-runtime.mjs start",
+    "start": "node scripts/db-local-start.mjs && node scripts/next-runtime.mjs start",
     "lint": "eslint .",
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:import-json": "node scripts/db-import-json.mjs"

@@ -210,6 +210,17 @@
   line-height: 1.45;
 }
 
+.notice {
+  margin: 0 0 18px;
+  padding: 11px 13px;
+  border: 1px solid #bad1c0;
+  border-radius: 3px;
+  background: #f2faf4;
+  color: #285b36;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .topbar {
   min-height: 74px;
   padding: 14px max(32px, calc((100vw - 1280px) / 2));
@@ -992,6 +1003,227 @@
   line-height: 1.6;
 }
 
+.formManager {
+  display: grid;
+  gap: 22px;
+}
+
+.formConfigCard {
+  padding: 24px;
+  border: 1px solid #dcd7cd;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 9px 28px rgb(31 35 30 / 0.04);
+}
+
+.formConfigHeader,
+.fieldsHeading,
+.formFieldHeader,
+.formConfigActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.formConfigHeader {
+  padding-bottom: 21px;
+  border-bottom: 1px solid #e8e4dc;
+}
+
+.formConfigHeader .eyebrow {
+  margin: 0 0 6px;
+}
+
+.formConfigHeader h2,
+.fieldsHeading h3 {
+  margin: 0;
+  color: #292d28;
+  font-family: var(--serif), Georgia, serif;
+  font-weight: 500;
+}
+
+.formConfigHeader h2 {
+  font-size: 27px;
+}
+
+.formConfigHeader a {
+  margin-top: 7px;
+  display: inline-block;
+  color: #735d32;
+  font-size: 11px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.formSwitch,
+.fieldOptions label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #4d524b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.formSwitch input,
+.fieldOptions input {
+  width: 16px;
+  height: 16px;
+  accent-color: #8b7447;
+}
+
+.fieldOptions input:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.formSettingsGrid,
+.fieldEditGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.formSettingsGrid {
+  margin-top: 22px;
+}
+
+.formSettingsGrid label,
+.fieldEditGrid label {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  color: #555a53;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.formSettingsGrid input,
+.formSettingsGrid textarea,
+.fieldEditGrid input {
+  width: 100%;
+  border: 1px solid #d4cfc5;
+  border-radius: 9px;
+  outline: none;
+  background: #fff;
+  color: #20231f;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.formSettingsGrid input,
+.fieldEditGrid input {
+  min-height: 44px;
+  padding: 0 13px;
+}
+
+.formSettingsGrid textarea {
+  min-height: 84px;
+  padding: 12px 13px;
+  resize: vertical;
+}
+
+.formSettingsGrid input:focus,
+.formSettingsGrid textarea:focus,
+.fieldEditGrid input:focus {
+  border-color: #987c45;
+  box-shadow: 0 0 0 3px rgb(152 124 69 / 0.12);
+}
+
+.fieldsHeading {
+  margin: 28px 0 14px;
+  align-items: flex-end;
+}
+
+.fieldsHeading h3 {
+  font-size: 21px;
+}
+
+.fieldsHeading p {
+  margin: 5px 0 0;
+  color: #7a7e77;
+  font-size: 10px;
+}
+
+.fieldsHeading > span {
+  color: #8b7447;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.formFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.formFieldCard {
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid #e2ded6;
+  border-radius: 11px;
+  background: #faf9f6;
+}
+
+.formFieldHeader {
+  margin-bottom: 15px;
+}
+
+.fieldKey {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.fieldKey code {
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: #ece7dc;
+  color: #65522f;
+  font-size: 10px;
+}
+
+.fieldKey span {
+  color: #858981;
+  font-size: 9px;
+}
+
+.fieldOptions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.fieldOptions label {
+  font-size: 10px;
+}
+
+.orderField {
+  width: 88px;
+}
+
+.formConfigActions {
+  margin-top: 20px;
+  padding-top: 19px;
+  justify-content: flex-end;
+  border-top: 1px solid #e8e4dc;
+}
+
+.formConfigActions .secondaryButton {
+  text-decoration: none;
+}
+
 @media (max-width: 980px) {
   .reviewGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1006,7 +1238,8 @@
   }
 
   .statsGrid,
-  .doctorFormGrid {
+  .doctorFormGrid,
+  .formFields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1140,8 +1373,29 @@
   .statsGrid,
   .siteGrid,
   .doctorGrid,
-  .doctorFormGrid {
+  .doctorFormGrid,
+  .formSettingsGrid,
+  .fieldEditGrid,
+  .formFields {
     grid-template-columns: 1fr;
+  }
+
+  .formConfigCard {
+    padding: 19px;
+  }
+
+  .formConfigHeader,
+  .fieldsHeading,
+  .formFieldHeader,
+  .formConfigActions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .formConfigActions,
+  .formConfigActions .primaryButton,
+  .formConfigActions .secondaryButton {
+    width: 100%;
   }
 
   .doctorBioField {
