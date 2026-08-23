@@ -8,3 +8,4 @@ out/
 .mysql/
 /data/contacts.json
 /data/appointments.json
+.vercel/
