@@ -4,6 +4,7 @@ import { SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { clinicConfig } from "@/lib/site-config";
 
 const pageCopy = {
   fr: {
@@ -21,7 +22,7 @@ const pageCopy = {
     apprehensionCopy: "Signalez votre appréhension lors de la prise de rendez-vous. Nous prévoyons alors un moment plus long, sans soin : se rencontrer, regarder, expliquer — décider ensuite.",
     file: "Dossier", otherPractice: "Venir d’un autre cabinet",
     fileCopy: "Votre dossier vous appartient. Demandez à votre ancien dentiste vos radiographies et votre historique ; il est tenu de les transmettre. Nous pouvons aussi les réclamer à votre place — une signature suffit.",
-    access: "Accès", findUs: "Nous trouver", parking: "Parking devant le cabinet - accès de plain-pied", directions: "Itinéraire",
+    access: "Accès", findUs: "Nous trouver", addressPending: "Adresse à confirmer auprès du cabinet", parking: "Contactez le cabinet pour les informations d’accès et de stationnement.", directions: "Itinéraire",
   },
   nl: {
     sequence: "Verloop", sequenceTitle: "Eén uur, vijf momenten",
@@ -38,7 +39,7 @@ const pageCopy = {
     apprehensionCopy: "Vertel ons bij het maken van uw afspraak dat u bezorgd bent. We voorzien dan extra tijd, zonder behandeling: kennismaken, kijken en uitleggen — daarna pas beslissen.",
     file: "Dossier", otherPractice: "Overkomen van een andere praktijk",
     fileCopy: "Uw dossier is van u. Vraag uw vorige tandarts om uw röntgenfoto’s en historiek door te sturen; die moeten worden overgemaakt. Wij kunnen dit ook voor u regelen — één handtekening volstaat.",
-    access: "Bereikbaarheid", findUs: "Ons vinden", parking: "Parking voor de praktijk — rolstoeltoegankelijk", directions: "Route",
+    access: "Bereikbaarheid", findUs: "Ons vinden", addressPending: "Adres te bevestigen bij de praktijk", parking: "Neem contact op met de praktijk voor informatie over bereikbaarheid en parkeren.", directions: "Route",
   },
 } as const;
 
@@ -47,9 +48,10 @@ export default function NewPatientPage() {
   const copy = pageCopy[language];
 
   return (
-    <main className="patient-page page-paper">
+    <div className="patient-page page-paper">
       <SiteHeader />
-      <section className="content-shell patient-visit">
+      <main>
+      <section className="content-shell patient-visit" id="main-content" tabIndex={-1}>
         <div className="patient-visit__timeline">
           <SectionLabel>{copy.sequence}</SectionLabel>
           <h1>{copy.sequenceTitle}</h1>
@@ -92,13 +94,14 @@ export default function NewPatientPage() {
           <div>
             <SectionLabel>{copy.access}</SectionLabel>
             <h2>{copy.findUs}</h2>
-            <address>Kuringenstraat 511<br />4030 Hasselt</address>
+            <address>{clinicConfig.hasAddress ? <>{clinicConfig.addressLine1}<br />{clinicConfig.postalCity}</> : copy.addressPending}</address>
             <p>{copy.parking}</p>
-            <a className="patient-details__directions" href="https://www.google.com/maps/dir/?api=1&destination=Kuringenstraat+511%2C+4030+Hasselt%2C+Belgium" target="_blank" rel="noreferrer">{copy.directions}<span>→</span></a>
+            {clinicConfig.mapUrl && <a className="patient-details__directions" href={clinicConfig.mapUrl} target="_blank" rel="noreferrer">{copy.directions}<span aria-hidden="true">→</span></a>}
           </div>
         </div>
       </section>
+      </main>
       <SiteFooter />
-    </main>
+    </div>
   );
 }

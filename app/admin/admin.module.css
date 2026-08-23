@@ -487,6 +487,20 @@
   gap: 12px;
 }
 
+.pagination {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.pagination span {
+  color: #676b64;
+  font-size: 12px;
+  text-align: center;
+}
+
 .record {
   padding: 23px;
   display: grid;
@@ -1418,6 +1432,10 @@
   .recordActions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .pagination {
+    flex-wrap: wrap;
   }
 
   .recordActions select {

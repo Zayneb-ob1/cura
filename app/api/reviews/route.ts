@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listRecords, type StoredRecord } from "@/lib/admin/store";
+import { listPublishedReviews, type StoredRecord } from "@/lib/admin/store";
 import { ApiError } from "@/lib/admin/validation";
 import { errorResponse } from "@/lib/admin/handlers";
 
@@ -14,6 +14,15 @@ type ReviewRecord = StoredRecord & {
   published: boolean;
 };
 
+const importedPlaceholderIds = new Set([
+  "review-fr-samira",
+  "review-fr-tom",
+  "review-fr-nathalie",
+  "review-nl-samira",
+  "review-nl-tom",
+  "review-nl-nathalie",
+]);
+
 export async function GET(request: NextRequest) {
   try {
     const language = new URL(request.url).searchParams.get("language");
@@ -21,9 +30,9 @@ export async function GET(request: NextRequest) {
       throw new ApiError(400, "language must be fr or nl");
     }
 
-    const records = await listRecords<ReviewRecord>("reviews");
+    const records = await listPublishedReviews<ReviewRecord>(language ?? undefined);
     const items = records
-      .filter((record) => record.published === true && (!language || record.language === language))
+      .filter(({ id }) => !importedPlaceholderIds.has(id))
       .map(({ id, name, quote, rating, language: reviewLanguage, createdAt, updatedAt }) => ({
         id,
         name,

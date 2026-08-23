@@ -10,6 +10,12 @@ function own(input: JsonObject, key: string) {
   return Object.prototype.hasOwnProperty.call(input, key);
 }
 
+function assertOnlyKeys(input: JsonObject, allowed: readonly string[]) {
+  const allowedKeys = new Set(allowed);
+  const unsupported = Object.keys(input).filter((key) => !allowedKeys.has(key));
+  if (unsupported.length > 0) throw new ApiError(400, `Unsupported fields: ${unsupported.join(", ")}`);
+}
+
 function textValue(
   input: JsonObject,
   key: string,
@@ -42,6 +48,9 @@ function normalizeField(value: unknown): FormFieldConfig {
     throw new ApiError(400, "Each field must be an object");
   }
   const field = value as JsonObject;
+  assertOnlyKeys(field, [
+    "key", "labelFr", "labelNl", "placeholderFr", "placeholderNl", "required", "visible", "order",
+  ]);
   const key = textValue(field, "key", { max: 64 });
   if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(key)) {
     throw new ApiError(400, `Invalid field key: ${key}`);
@@ -62,6 +71,10 @@ function normalizeField(value: unknown): FormFieldConfig {
 }
 
 export function normalizeFormConfig(input: JsonObject) {
+  assertOnlyKeys(input, [
+    "formType", "slug", "enabled", "titleFr", "titleNl", "descriptionFr", "descriptionNl",
+    "submitLabelFr", "submitLabelNl", "fields",
+  ]);
   const formType = formTypeValue(input.formType);
   const expectedSlug = formType === "contact" ? "contact" : "rendez-vous";
   if (own(input, "slug") && input.slug !== expectedSlug) {
@@ -75,6 +88,11 @@ export function normalizeFormConfig(input: JsonObject) {
   if (receivedKeys.size !== fields.length) throw new ApiError(400, "Field keys must be unique");
   if (fields.length !== expectedKeys.length || expectedKeys.some((key) => !receivedKeys.has(key))) {
     throw new ApiError(400, `fields must contain: ${expectedKeys.join(", ")}`);
+  }
+  for (const field of fields) {
+    if (field.required && !field.visible) {
+      throw new ApiError(400, `${field.key} cannot be required while hidden`);
+    }
   }
 
   const submissionRequiredKeys = formType === "contact"
@@ -99,4 +117,16 @@ export function normalizeFormConfig(input: JsonObject) {
     fields,
   };
   return { formType, config };
+}
+
+export function assertConfiguredRequiredFields(config: FormConfig, input: JsonObject) {
+  for (const field of config.fields) {
+    if (!field.visible || !field.required) continue;
+    const value = input[field.key];
+    if (field.key === "consent") {
+      if (value !== true) throw new ApiError(400, `${field.key} is required`);
+    } else if (typeof value !== "string" || !value.trim()) {
+      throw new ApiError(400, `${field.key} is required`);
+    }
+  }
 }

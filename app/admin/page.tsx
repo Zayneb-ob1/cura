@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./admin.module.css";
 
 type DataSection = "contacts" | "appointments" | "reviews" | "doctors";
@@ -9,6 +9,22 @@ type AdminSection = "overview" | DataSection | "forms" | "site";
 type AdminItem = Record<string, unknown> & { id: string | number };
 
 type OverviewData = Record<DataSection, AdminItem[]>;
+
+type Pagination = {
+  page: number;
+  limit: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
+type OverviewTotals = Record<DataSection, number>;
+
+type OverviewSummary = {
+  newMessages: number;
+  pendingAppointments: number;
+  publishedReviews: number;
+};
 
 type ReviewDraft = {
   name: string;
@@ -97,6 +113,27 @@ const emptyOverview: OverviewData = {
   doctors: [],
 };
 
+const emptyOverviewTotals: OverviewTotals = {
+  contacts: 0,
+  appointments: 0,
+  reviews: 0,
+  doctors: 0,
+};
+
+const emptyOverviewSummary: OverviewSummary = {
+  newMessages: 0,
+  pendingAppointments: 0,
+  publishedReviews: 0,
+};
+
+const emptyPagination: Pagination = {
+  page: 1,
+  limit: 25,
+  pageSize: 25,
+  total: 0,
+  totalPages: 0,
+};
+
 function isDataSection(section: AdminSection): section is DataSection {
   return section === "contacts" || section === "appointments" || section === "reviews" || section === "doctors";
 }
@@ -151,6 +188,11 @@ export default function AdminPage() {
   const [activeSection, setActiveSection] = useState<AdminSection>("overview");
   const [items, setItems] = useState<AdminItem[]>([]);
   const [overviewData, setOverviewData] = useState<OverviewData>(emptyOverview);
+  const [overviewTotals, setOverviewTotals] = useState<OverviewTotals>(emptyOverviewTotals);
+  const [overviewSummary, setOverviewSummary] = useState<OverviewSummary>(emptyOverviewSummary);
+  const [pagination, setPagination] = useState<Pagination>(emptyPagination);
+  const currentPage = useRef(1);
+  const previousSection = useRef<AdminSection>("overview");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -164,33 +206,41 @@ export default function AdminPage() {
   const [doctorDraft, setDoctorDraft] = useState<DoctorDraft>(emptyDoctor);
   const [formConfigs, setFormConfigs] = useState<FormConfigs | null>(null);
 
-  const loadItems = useCallback(async (section: AdminSection) => {
+  const loadItems = useCallback(async (section: AdminSection, requestedPage = currentPage.current) => {
     setLoading(true);
     setError("");
     setNotice("");
 
     try {
       if (section === "overview") {
-        const responses = await Promise.all(
-          (["contacts", "appointments", "reviews", "doctors"] as DataSection[]).map((name) =>
-            fetch(`/api/admin/${name}`, {
+        const [responses, summaryResponses] = await Promise.all([
+          Promise.all((["contacts", "appointments", "reviews", "doctors"] as DataSection[]).map((name) =>
+            fetch(`/api/admin/${name}?page=1&limit=25`, {
               credentials: "same-origin",
               cache: "no-store",
             }),
-          ),
-        );
+          )),
+          Promise.all([
+            fetch("/api/admin/contacts?page=1&limit=1&status=new", { credentials: "same-origin", cache: "no-store" }),
+            fetch("/api/admin/appointments?page=1&limit=1&status=pending", { credentials: "same-origin", cache: "no-store" }),
+            fetch("/api/admin/reviews?page=1&limit=1&published=true", { credentials: "same-origin", cache: "no-store" }),
+          ]),
+        ]);
 
-        if (responses.some((response) => response.status === 401)) {
+        if ([...responses, ...summaryResponses].some((response) => response.status === 401)) {
           setAuthenticated(false);
           setItems([]);
           return;
         }
 
-        const failedResponse = responses.find((response) => !response.ok);
+        const failedResponse = [...responses, ...summaryResponses].find((response) => !response.ok);
         if (failedResponse) throw new Error(await getErrorMessage(failedResponse));
 
         const payloads = await Promise.all(
-          responses.map((response) => response.json() as Promise<{ items?: AdminItem[] }>),
+          responses.map((response) => response.json() as Promise<{ items?: AdminItem[]; pagination?: Pagination }>),
+        );
+        const summaryPayloads = await Promise.all(
+          summaryResponses.map((response) => response.json() as Promise<{ pagination?: Pagination }>),
         );
         setOverviewData({
           contacts: Array.isArray(payloads[0].items) ? payloads[0].items : [],
@@ -198,6 +248,19 @@ export default function AdminPage() {
           reviews: Array.isArray(payloads[2].items) ? payloads[2].items : [],
           doctors: Array.isArray(payloads[3].items) ? payloads[3].items : [],
         });
+        setOverviewTotals({
+          contacts: payloads[0].pagination?.total ?? payloads[0].items?.length ?? 0,
+          appointments: payloads[1].pagination?.total ?? payloads[1].items?.length ?? 0,
+          reviews: payloads[2].pagination?.total ?? payloads[2].items?.length ?? 0,
+          doctors: payloads[3].pagination?.total ?? payloads[3].items?.length ?? 0,
+        });
+        setOverviewSummary({
+          newMessages: summaryPayloads[0].pagination?.total ?? 0,
+          pendingAppointments: summaryPayloads[1].pagination?.total ?? 0,
+          publishedReviews: summaryPayloads[2].pagination?.total ?? 0,
+        });
+        setPagination(emptyPagination);
+        currentPage.current = 1;
         setItems([]);
         setAuthenticated(true);
         return;
@@ -208,11 +271,15 @@ export default function AdminPage() {
           credentials: "same-origin",
           cache: "no-store",
         });
-        if (!response.ok) {
+        const payload = response.ok ? await response.json() as { authenticated?: boolean } : null;
+        if (!payload?.authenticated) {
           setAuthenticated(false);
+          setItems([]);
           return;
         }
         setItems([]);
+        setPagination(emptyPagination);
+        currentPage.current = 1;
         setAuthenticated(true);
         return;
       }
@@ -235,11 +302,13 @@ export default function AdminPage() {
         }
         setFormConfigs(payload.forms);
         setItems([]);
+        setPagination(emptyPagination);
+        currentPage.current = 1;
         setAuthenticated(true);
         return;
       }
 
-      const response = await fetch(`/api/admin/${section}`, {
+      const response = await fetch(`/api/admin/${section}?page=${requestedPage}&limit=${emptyPagination.limit}`, {
         credentials: "same-origin",
         cache: "no-store",
       });
@@ -252,8 +321,11 @@ export default function AdminPage() {
 
       if (!response.ok) throw new Error(await getErrorMessage(response));
 
-      const payload = (await response.json()) as { items?: AdminItem[] };
+      const payload = (await response.json()) as { items?: AdminItem[]; pagination?: Pagination };
       setItems(Array.isArray(payload.items) ? payload.items : []);
+      const nextPagination = payload.pagination ?? { ...emptyPagination, total: payload.items?.length ?? 0 };
+      setPagination(nextPagination);
+      currentPage.current = nextPagination.page;
       setAuthenticated(true);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Impossible de charger les données.");
@@ -263,25 +335,54 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    const task = window.setTimeout(() => void loadItems(activeSection), 0);
+    const sectionChanged = previousSection.current !== activeSection;
+    previousSection.current = activeSection;
+    if (sectionChanged) currentPage.current = 1;
+    const task = window.setTimeout(() => void loadItems(activeSection, currentPage.current), 0);
     return () => window.clearTimeout(task);
   }, [activeSection, loadItems]);
 
   useEffect(() => {
     if (!authenticated || activeSection === "forms") return;
 
-    const refreshDashboard = () => void loadItems(activeSection);
+    let interval: number | undefined;
+    let refreshPromise: Promise<void> | null = null;
+
+    const stopPolling = () => {
+      if (interval !== undefined) window.clearInterval(interval);
+      interval = undefined;
+    };
+    const refreshDashboard = () => {
+      if (document.hidden || refreshPromise) return;
+      refreshPromise = loadItems(activeSection).finally(() => {
+        refreshPromise = null;
+      });
+    };
+    const startPolling = () => {
+      stopPolling();
+      if (!document.hidden) interval = window.setInterval(refreshDashboard, 15000);
+    };
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+        return;
+      }
+      refreshDashboard();
+      startPolling();
+    };
     const handleStorage = (event: StorageEvent) => {
       if (event.key === "cura-dashboard-update") refreshDashboard();
     };
-    const interval = window.setInterval(refreshDashboard, 15000);
 
+    startPolling();
     window.addEventListener("focus", refreshDashboard);
     window.addEventListener("storage", handleStorage);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
-      window.clearInterval(interval);
+      stopPolling();
       window.removeEventListener("focus", refreshDashboard);
       window.removeEventListener("storage", handleStorage);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [activeSection, authenticated, loadItems]);
 
@@ -433,7 +534,7 @@ export default function AdminPage() {
 
   function startDoctor() {
     setEditingDoctorId(null);
-    setDoctorDraft({ ...emptyDoctor, order: String(items.length + 1) });
+    setDoctorDraft({ ...emptyDoctor, order: String(pagination.total + 1) });
     setShowDoctorForm(true);
   }
 
@@ -537,10 +638,8 @@ export default function AdminPage() {
     }
   }
 
-  const totalItems = overviewData.contacts.length + overviewData.appointments.length + overviewData.reviews.length + overviewData.doctors.length;
-  const newMessages = overviewData.contacts.filter((item) => asText(item.status, "new") === "new").length;
-  const pendingAppointments = overviewData.appointments.filter((item) => asText(item.status, "pending") === "pending").length;
-  const publishedReviews = overviewData.reviews.filter((item) => Boolean(item.published)).length;
+  const totalItems = overviewTotals.contacts + overviewTotals.appointments + overviewTotals.reviews + overviewTotals.doctors;
+  const { newMessages, pendingAppointments, publishedReviews } = overviewSummary;
   const recentActivity = [
     ...overviewData.contacts.map((item) => ({
       id: `contact-${item.id}`,
@@ -572,7 +671,7 @@ export default function AdminPage() {
 
   if (authenticated === null) {
     return (
-      <main className={styles.loginPage}>
+      <main id="main-content" tabIndex={-1} className={styles.loginPage}>
         <div className={styles.loadingCard}>Vérification de la session…</div>
       </main>
     );
@@ -580,7 +679,7 @@ export default function AdminPage() {
 
   if (!authenticated) {
     return (
-      <main className={styles.loginPage}>
+      <main id="main-content" tabIndex={-1} className={styles.loginPage}>
         <section className={styles.loginCard} aria-labelledby="admin-login-title">
           <div className={styles.brand}>CURA</div>
           <p className={styles.eyebrow}>Administration</p>
@@ -618,7 +717,7 @@ export default function AdminPage() {
   }
 
   return (
-    <main className={styles.dashboard}>
+    <main id="main-content" tabIndex={-1} className={styles.dashboard}>
       <header className={styles.topbar}>
         <div>
           <span className={styles.brand}>CURA</span>
@@ -657,7 +756,7 @@ export default function AdminPage() {
           </nav>
           <div className={styles.sidebarFooter}>
             <span>Connecté en tant que</span>
-            <strong>admin@gmail.com</strong>
+            <strong>Administrateur</strong>
           </div>
         </aside>
 
@@ -675,7 +774,7 @@ export default function AdminPage() {
                       ? `${formConfigs ? 2 : 0} formulaires configurés`
                     : activeSection === "site"
                       ? `${sitePages.length} pages disponibles`
-                      : `${items.length} élément${items.length === 1 ? "" : "s"}`}
+                      : `${pagination.total} élément${pagination.total === 1 ? "" : "s"}`}
               </p>
             </div>
             <div className={styles.headerActions}>
@@ -796,22 +895,22 @@ export default function AdminPage() {
                 <div className={styles.statsGrid}>
                   <button type="button" className={styles.statCard} onClick={() => setActiveSection("contacts")}>
                     <span>Messages</span>
-                    <strong>{overviewData.contacts.length}</strong>
+                    <strong>{overviewTotals.contacts}</strong>
                     <small>{newMessages} nouveau{newMessages === 1 ? "" : "x"}</small>
                   </button>
                   <button type="button" className={styles.statCard} onClick={() => setActiveSection("appointments")}>
                     <span>Rendez-vous</span>
-                    <strong>{overviewData.appointments.length}</strong>
+                    <strong>{overviewTotals.appointments}</strong>
                     <small>{pendingAppointments} à traiter</small>
                   </button>
                   <button type="button" className={styles.statCard} onClick={() => setActiveSection("reviews")}>
                     <span>Avis</span>
-                    <strong>{overviewData.reviews.length}</strong>
+                    <strong>{overviewTotals.reviews}</strong>
                     <small>{publishedReviews} publié{publishedReviews === 1 ? "" : "s"}</small>
                   </button>
                   <button type="button" className={styles.statCard} onClick={() => setActiveSection("doctors")}>
                     <span>Équipe</span>
-                    <strong>{overviewData.doctors.length}</strong>
+                    <strong>{overviewTotals.doctors}</strong>
                     <small>membres du cabinet</small>
                   </button>
                 </div>
@@ -1144,6 +1243,30 @@ export default function AdminPage() {
                 </article>
               ))}
             </div>
+          )}
+
+          {isDataSection(activeSection) && !loading && pagination.totalPages > 1 && (
+            <nav className={styles.pagination} aria-label="Pagination des résultats">
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                disabled={pagination.page <= 1}
+                onClick={() => void loadItems(activeSection, pagination.page - 1)}
+              >
+                Précédent
+              </button>
+              <span>
+                Page {pagination.page} sur {pagination.totalPages} · {pagination.total} éléments
+              </span>
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => void loadItems(activeSection, pagination.page + 1)}
+              >
+                Suivant
+              </button>
+            </nav>
           )}
         </section>
       </div>

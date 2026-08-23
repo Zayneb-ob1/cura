@@ -1,4 +1,6 @@
-import mysql, { type Pool, type PoolConnection, type RowDataPacket } from "mysql2/promise";
+import "server-only";
+import { type Pool, type PoolConnection, type RowDataPacket } from "mysql2/promise";
+import { database } from "@/lib/database";
 
 export type FormType = "contact" | "appointment";
 
@@ -34,32 +36,6 @@ const formSlugs: Record<FormType, FormConfig["slug"]> = {
   contact: "contact",
   appointment: "rendez-vous",
 };
-
-let pool: Pool | null = null;
-
-function database() {
-  const host = process.env.MYSQL_HOST;
-  const user = process.env.MYSQL_USER;
-  const password = process.env.MYSQL_PASSWORD;
-  const databaseName = process.env.MYSQL_DATABASE;
-  if (!host || !user || password === undefined || !databaseName) {
-    throw new Error("MySQL environment variables are not configured");
-  }
-
-  pool ??= mysql.createPool({
-    host,
-    port: Number(process.env.MYSQL_PORT ?? 3306),
-    user,
-    password,
-    database: databaseName,
-    charset: "utf8mb4",
-    dateStrings: true,
-    waitForConnections: true,
-    connectionLimit: 10,
-    enableKeepAlive: true,
-  });
-  return pool;
-}
 
 function mapField(row: RowDataPacket): FormFieldConfig {
   return {

@@ -23,6 +23,10 @@ export async function loadDatabaseEnvironment() {
   const missing = required.filter((name) => process.env[name] === undefined || process.env[name] === "");
   if (missing.length > 0) throw new Error(`Missing MySQL environment variables: ${missing.join(", ")}`);
 
+  const ca = process.env.MYSQL_SSL_CA?.replace(/\\n/g, "\n").trim();
+  const sslEnabled = process.env.MYSQL_SSL === "true" || process.env.MYSQL_SSL === "required" || Boolean(ca);
+  const connectTimeout = Number.parseInt(process.env.MYSQL_CONNECT_TIMEOUT_MS ?? "10000", 10);
+
   return {
     host: process.env.MYSQL_HOST,
     port: Number(process.env.MYSQL_PORT ?? 3306),
@@ -31,5 +35,10 @@ export async function loadDatabaseEnvironment() {
     database: process.env.MYSQL_DATABASE,
     charset: "utf8mb4",
     dateStrings: true,
+    connectTimeout: Number.isInteger(connectTimeout) && connectTimeout >= 1_000 ? connectTimeout : 10_000,
+    ssl: sslEnabled ? {
+      ca: ca || undefined,
+      rejectUnauthorized: process.env.MYSQL_SSL_REJECT_UNAUTHORIZED !== "false",
+    } : undefined,
   };
 }

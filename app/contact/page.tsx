@@ -6,6 +6,7 @@ import { useLanguage } from "@/components/language-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { hoursByLanguage } from "@/lib/content";
+import { clinicConfig } from "@/lib/site-config";
 
 const pageCopy = {
   fr: {
@@ -14,7 +15,9 @@ const pageCopy = {
     name: "Nom", email: "E-mail", subject: "Sujet", message: "Message",
     subjects: { general: "Question générale", file: "Dossier", transfer: "Transfert de dossier" },
     send: "Envoyer le message", response: "Nous répondons sous 24 h ouvrées.", sending: "Envoi en cours…", success: "Votre message a bien été envoyé. Nous vous répondrons sous 24 h ouvrées.", error: "Impossible d’envoyer votre message pour le moment. Veuillez réessayer.",
-    phoneLabel: "Téléphone", emailLabel: "E-mail", urgencyLabel: "Urgences", urgencyValue: "Appelez avant 10 h", faqTitle: "Questions fréquentes",
+    phoneLabel: "Téléphone", emailLabel: "E-mail", urgencyLabel: "Urgences", faqTitle: "Questions fréquentes",
+    addressPending: "Adresse à confirmer",
+    contactPending: "À confirmer",
     faqs: [
       ["Faut-il être envoyé par un médecin ?", "Non. Vous pouvez prendre rendez-vous directement avec notre cabinet."],
       ["J’ai peur du dentiste. Que faire ?", "Dites-le-nous lors de votre demande. Nous prévoyons le temps nécessaire pour vous recevoir calmement."],
@@ -28,7 +31,9 @@ const pageCopy = {
     name: "Naam", email: "E-mail", subject: "Onderwerp", message: "Bericht",
     subjects: { general: "Algemene vraag", file: "Dossier", transfer: "Dossieroverdracht" },
     send: "Bericht versturen", response: "We antwoorden binnen 24 werkuren.", sending: "Bezig met versturen…", success: "Uw bericht is goed verzonden. We antwoorden binnen 24 werkuren.", error: "Uw bericht kan momenteel niet worden verzonden. Probeer het opnieuw.",
-    phoneLabel: "Telefoon", emailLabel: "E-mail", urgencyLabel: "Dringend", urgencyValue: "Bel vóór 10 uur", faqTitle: "Veelgestelde vragen",
+    phoneLabel: "Telefoon", emailLabel: "E-mail", urgencyLabel: "Dringend", faqTitle: "Veelgestelde vragen",
+    addressPending: "Adres te bevestigen",
+    contactPending: "Te bevestigen",
     faqs: [
       ["Heb ik een verwijzing van een arts nodig?", "Nee. U kunt rechtstreeks een afspraak maken bij onze praktijk."],
       ["Ik ben bang voor de tandarts. Wat nu?", "Vertel het ons bij uw aanvraag. We nemen de nodige tijd om u rustig te ontvangen."],
@@ -116,10 +121,11 @@ export default function ContactPage() {
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
 
     async function loadFormConfig() {
       try {
-        const response = await fetch("/api/forms/contact", { cache: "no-store" });
+        const response = await fetch("/api/forms/contact", { cache: "no-store", signal: controller.signal });
         if (!response.ok) return;
         const result = (await response.json()) as { form?: unknown };
         if (active && isEditableForm(result.form)) setFormConfig(result.form);
@@ -131,6 +137,7 @@ export default function ContactPage() {
     void loadFormConfig();
     return () => {
       active = false;
+      controller.abort();
     };
   }, []);
 
@@ -178,9 +185,10 @@ export default function ContactPage() {
   }
 
   return (
-    <main className="contact-page page-paper">
+    <div className="contact-page page-paper">
       <SiteHeader />
-      <section className="content-shell contact-page__intro">
+      <main>
+      <section className="content-shell contact-page__intro" id="main-content" tabIndex={-1}>
         <SectionLabel>{copy.contact}</SectionLabel>
         <h1 className="editorial-title">{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || copy.title}</h1>
       </section>
@@ -188,13 +196,13 @@ export default function ContactPage() {
         <div className="contact-cards">
           <article>
             <SectionLabel>{copy.address}</SectionLabel>
-            <h2>Kuringenstraat 511<br />4030 Hasselt</h2>
+            <h2>{clinicConfig.hasAddress ? <>{clinicConfig.addressLine1}<br />{clinicConfig.postalCity}</> : copy.addressPending}</h2>
             <dl className="contact-details">
-              <div><dt>{copy.phoneLabel}</dt><dd><a href="tel:+3211000000">+32 (0)11 00 00 00</a></dd></div>
-              <div><dt>{copy.emailLabel}</dt><dd><a href="mailto:info@cura-tandarts.be">info@cura-tandarts.be</a></dd></div>
-              <div><dt>{copy.urgencyLabel}</dt><dd><a href="tel:+3211000000">{copy.urgencyValue}</a></dd></div>
+              <div><dt>{copy.phoneLabel}</dt><dd>{clinicConfig.hasPhone ? <a href={`tel:${clinicConfig.phone}`}>{clinicConfig.phoneDisplay}</a> : copy.contactPending}</dd></div>
+              <div><dt>{copy.emailLabel}</dt><dd>{clinicConfig.email ? <a href={`mailto:${clinicConfig.email}`}>{clinicConfig.email}</a> : copy.contactPending}</dd></div>
+              <div><dt>{copy.urgencyLabel}</dt><dd>{clinicConfig.hasPhone && clinicConfig.emergency[language] ? <a href={`tel:${clinicConfig.phone}`}>{clinicConfig.emergency[language]}</a> : copy.contactPending}</dd></div>
             </dl>
-            <a className="contact-directions" href="https://www.google.com/maps/dir/?api=1&destination=Kuringenstraat+511%2C+4030+Hasselt%2C+Belgium" target="_blank" rel="noreferrer">{copy.directions}<span aria-hidden="true">→</span></a>
+            {clinicConfig.mapUrl && <a className="contact-directions" href={clinicConfig.mapUrl} target="_blank" rel="noreferrer">{copy.directions}<span aria-hidden="true">→</span></a>}
           </article>
           <article>
             <SectionLabel>{copy.hours}</SectionLabel>
@@ -239,7 +247,8 @@ export default function ContactPage() {
           </section>
         </div>
       </section>
+      </main>
       <SiteFooter />
-    </main>
+    </div>
   );
 }

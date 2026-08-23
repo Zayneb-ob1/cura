@@ -1,3 +1,5 @@
+import { clinicConfig } from "@/lib/site-config";
+
 export type Treatment = {
   number: string;
   name: string;
@@ -76,12 +78,6 @@ const treatmentsNl: Treatment[] = [
 export const treatmentsByLanguage = { fr: treatmentsFr, nl: treatmentsNl } as const;
 
 export const hoursByLanguage = {
-  fr: [
-    ["Lun", "08:30–18:00"], ["Mar", "08:30–18:00"], ["Mer", "08:30–18:00"],
-    ["Jeu", "08:30–18:00"], ["Ven", "08:30–17:00"], ["Sam", "09:00–13:00"], ["Dim", "Fermé"],
-  ],
-  nl: [
-    ["Ma", "08:30–18:00"], ["Di", "08:30–18:00"], ["Wo", "08:30–18:00"],
-    ["Do", "08:30–18:00"], ["Vr", "08:30–17:00"], ["Za", "09:00–13:00"], ["Zo", "Gesloten"],
-  ],
-} as const;
+  fr: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((day, index) => [day, clinicConfig.hours[index] || "—"] as const),
+  nl: ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"].map((day, index) => [day, clinicConfig.hours[index] || "—"] as const),
+};

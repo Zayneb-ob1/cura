@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { useLanguage, type Language } from "@/components/language-provider";
+import { clinicConfig } from "@/lib/site-config";
 
 const footerCopy = {
   fr: {
@@ -30,16 +31,10 @@ const footerCopy = {
       ["Mentions légales", "/mentions-legales"],
     ],
     hoursLabel: "HORAIRES",
-    hours: [
-      ["Lun", "08:30-18:00"],
-      ["Mar", "08:30-18:00"],
-      ["Mer", "08:30-18:00"],
-      ["Jeu", "08:30-18:00"],
-      ["Ven", "08:30-17:00"],
-      ["Sam", "09:00-13:00"],
-      ["Dim", "Fermé"],
-    ],
+    days: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
+    contactPending: "Coordonnées à confirmer",
     management: "Gestion du cabinet",
+    homeLabel: "Accueil",
   },
   nl: {
     careLabel: "BEHANDELINGEN",
@@ -66,16 +61,10 @@ const footerCopy = {
       ["Wettelijke vermeldingen", "/mentions-legales"],
     ],
     hoursLabel: "OPENINGSUREN",
-    hours: [
-      ["Ma", "08:30-18:00"],
-      ["Di", "08:30-18:00"],
-      ["Wo", "08:30-18:00"],
-      ["Do", "08:30-18:00"],
-      ["Vr", "08:30-17:00"],
-      ["Za", "09:00-13:00"],
-      ["Zo", "Gesloten"],
-    ],
+    days: ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"],
+    contactPending: "Contactgegevens te bevestigen",
     management: "Praktijkbeheer",
+    homeLabel: "Startpagina",
   },
 } satisfies Record<
   Language,
@@ -87,30 +76,32 @@ const footerCopy = {
     patientsLabel: string;
     patientLinks: readonly (readonly [string, string])[];
     hoursLabel: string;
-    hours: readonly (readonly [string, string])[];
+    days: readonly string[];
+    contactPending: string;
     management: string;
+    homeLabel: string;
   }
 >;
 
 export function SiteFooter() {
   const { language } = useLanguage();
   const copy = footerCopy[language];
+  const hours = copy.days.map((day, index) => [day, clinicConfig.hours[index] || "—"] as const);
 
   return (
     <footer className="site-footer site-footer--dark">
-      <span className="site-footer__background-word" aria-hidden="true">CURA</span>
       <div className="site-footer__grid">
         <div className="site-footer__brand">
-          <Logo compact withMark />
+          <Logo compact withMark homeLabel={copy.homeLabel} />
           <p>
-            Kuringenstraat 511
-            <br />
-            4030 Hasselt
-            <br />
-            <a href="tel:+3211000000">+32 (0)11 00 00 00</a>
+            {clinicConfig.hasAddress ? (
+              <>{clinicConfig.addressLine1}{clinicConfig.addressLine1 && clinicConfig.postalCity && <br />}{clinicConfig.postalCity}</>
+            ) : copy.contactPending}
+            {clinicConfig.hasPhone && <><br /><a href={`tel:${clinicConfig.phone}`}>{clinicConfig.phoneDisplay}</a></>}
+            {clinicConfig.email && <><br /><a href={`mailto:${clinicConfig.email}`}>{clinicConfig.email}</a></>}
           </p>
         </div>
-        <div>
+        <div role="navigation" aria-label={copy.careLabel}>
           <p className="footer-label">{copy.careLabel}</p>
           {copy.careLinks.map((care, index) => (
             <Link key={care} href={`/soins#soin-${String(index + 1).padStart(2, "0")}`}>
@@ -118,13 +109,13 @@ export function SiteFooter() {
             </Link>
           ))}
         </div>
-        <div>
+        <div role="navigation" aria-label={copy.practiceLabel}>
           <p className="footer-label">{copy.practiceLabel}</p>
           {copy.practiceLinks.map(([label, href]) => (
             <Link key={href} href={href}>{label}</Link>
           ))}
         </div>
-        <div>
+        <div role="navigation" aria-label={copy.patientsLabel}>
           <p className="footer-label">{copy.patientsLabel}</p>
           {copy.patientLinks.map(([label, href]) => (
             <Link key={label} href={href}>{label}</Link>
@@ -132,7 +123,7 @@ export function SiteFooter() {
         </div>
         <div className="site-footer__hours">
           <p className="footer-label">{copy.hoursLabel}</p>
-          {copy.hours.map(([day, time]) => (
+          {hours.map(([day, time]) => (
             <div key={day}>
               <span>{day}</span>
               <span>{time}</span>

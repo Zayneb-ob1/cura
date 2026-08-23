@@ -5,13 +5,17 @@ export function Logo({
   compact = false,
   nameOnly = false,
   withMark = false,
+  homeLabel,
+  priority = false,
 }: {
   compact?: boolean;
   nameOnly?: boolean;
   withMark?: boolean;
+  homeLabel?: string;
+  priority?: boolean;
 }) {
   return (
-    <Link href="/" className="logo" aria-label="CURA Tandarts Praktijk, accueil">
+    <Link href="/" className="logo">
       {withMark && (
         <Image
           className="logo__mark"
@@ -19,7 +23,8 @@ export function Logo({
           alt=""
           width={656}
           height={784}
-          priority
+          sizes="48px"
+          priority={priority}
         />
       )}
       <span className="logo__name">CURA</span>
@@ -28,7 +33,7 @@ export function Logo({
           {compact ? <><span>TANDARTS</span><span>PRAKTIJK</span></> : "TANDARTS PRAKTIJK"}
         </span>
       )}
-      {!compact && <span className="sr-only">CURA Tandarts Praktijk</span>}
+      {homeLabel && <span className="sr-only"> — {homeLabel}</span>}
     </Link>
   );
 }
