@@ -236,7 +236,7 @@ export default function AppointmentPage() {
           <article><SectionLabel>{copy.hours}</SectionLabel>{hours.slice(0, 6).map(([day, time]) => <p key={day}><span>{day}</span><b>{time}</b></p>)}</article>
         </aside>
       </section>
-      <SiteFooter tone="light" />
+      <SiteFooter />
     </main>
   );
 }

@@ -41,7 +41,7 @@ export default function LegalPage() {
       <section className="content-shell advice-cards">
         {copy.sections.map(([title, text], index) => <article key={title}><span>0{index + 1}</span><h2>{title}</h2><p>{text}</p></article>)}
       </section>
-      <SiteFooter tone="light" />
+      <SiteFooter />
     </main>
   );
 }

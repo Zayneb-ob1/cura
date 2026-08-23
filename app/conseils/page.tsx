@@ -66,7 +66,7 @@ export default function AdvicePage() {
         <h2 className="editorial-title">{copy.faqTitle}</h2>
         <div>{copy.faq.map(([question, answer]) => <details key={question}><summary>{question}<span>+</span></summary><p>{answer}</p></details>)}</div>
       </section>
-      <SiteFooter tone="light" />
+      <SiteFooter />
     </main>
   );
 }

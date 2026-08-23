@@ -7,8 +7,6 @@ import { SiteHeader } from "@/components/site-header";
 
 const pageCopy = {
   fr: {
-    home: "Accueil", crumb: "Nouveau patient", welcome: "Bienvenue", title: "Votre première visite.",
-    intro: "Ce qui se passe, ce que vous apportez, ce que ça coûte — pour que rien ne vous prenne au dépourvu.",
     sequence: "Déroulé", sequenceTitle: "Une heure, cinq moments",
     visit: [
       ["Accueil", "5 min", "Carte d’identité, coordonnées, et la raison qui vous amène."],
@@ -26,8 +24,6 @@ const pageCopy = {
     access: "Accès", findUs: "Nous trouver", parking: "Parking devant le cabinet - accès de plain-pied", directions: "Itinéraire",
   },
   nl: {
-    home: "Start", crumb: "Nieuwe patiënt", welcome: "Welkom", title: "Uw eerste bezoek.",
-    intro: "Wat er gebeurt, wat u meebrengt en wat het kost — zodat niets onverwacht komt.",
     sequence: "Verloop", sequenceTitle: "Eén uur, vijf momenten",
     visit: [
       ["Onthaal", "5 min", "Identiteitskaart, contactgegevens en de reden van uw bezoek."],

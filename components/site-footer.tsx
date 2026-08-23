@@ -92,13 +92,12 @@ const footerCopy = {
   }
 >;
 
-export function SiteFooter({ tone = "dark" }: { tone?: "dark" | "light" }) {
+export function SiteFooter() {
   const { language } = useLanguage();
   const copy = footerCopy[language];
-  const visualTone = tone === "light" ? "dark" : tone;
 
   return (
-    <footer className={`site-footer site-footer--${visualTone}`}>
+    <footer className="site-footer site-footer--dark">
       <span className="site-footer__background-word" aria-hidden="true">CURA</span>
       <div className="site-footer__grid">
         <div className="site-footer__brand">

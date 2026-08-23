@@ -5,7 +5,6 @@ export type Treatment = {
   duration: string;
   price: string;
   detail: string;
-  featured?: boolean;
 };
 
 const treatmentsFr: Treatment[] = [
@@ -16,7 +15,6 @@ const treatmentsFr: Treatment[] = [
     duration: "30 min",
     price: "30 - 45 €",
     detail: "Une fois par an, c’est le rendez-vous qui rend tous les autres plus courts. Nous vérifions chaque dent, l’état des gencives et les anciens soins, puis nous établissons avec vous un plan si quelque chose demande une intervention.",
-    featured: true,
   },
   {
     number: "02",
@@ -25,7 +23,6 @@ const treatmentsFr: Treatment[] = [
     duration: "45 min",
     price: "45 - 95 €",
     detail: "La carie est retirée, puis la dent reconstruite couche par couche en composite. Le résultat est invisible et la dent retrouve sa forme et sa force le jour même.",
-    featured: true,
   },
   {
     number: "03",
@@ -34,7 +31,6 @@ const treatmentsFr: Treatment[] = [
     duration: "45 min",
     price: "40 - 120 €",
     detail: "Un nettoyage précis, au-dessus et sous la gencive, pour retrouver une bouche saine et prévenir la perte dentaire.",
-    featured: true,
   },
   { number: "04", name: "Traitement de canal", short: "Traitement du nerf infecté pour conserver une dent qui, sinon, devrait être extraite.", duration: "60 min", price: "140 - 400 €", detail: "Nous retirons le tissu infecté, désinfectons les canaux et refermons la dent afin de la conserver durablement." },
   { number: "05", name: "Extraction", short: "Retrait d’une dent trop abîmée ou d’une dent de sagesse, sous anesthésie locale.", duration: "45 min", price: "60 - 180 €", detail: "Une extraction est une décision prise ensemble, jamais par défaut. Nous vous expliquons ce qui la remplacera avant même de commencer." },
@@ -52,7 +48,6 @@ const treatmentsNl: Treatment[] = [
     duration: "30 min",
     price: "30 - 45 €",
     detail: "Eén keer per jaar maakt deze afspraak alle volgende korter. We controleren elke tand, het tandvlees en vroegere behandelingen en stellen samen een plan op als er iets moet gebeuren.",
-    featured: true,
   },
   {
     number: "02",
@@ -61,7 +56,6 @@ const treatmentsNl: Treatment[] = [
     duration: "45 min",
     price: "45 - 95 €",
     detail: "We verwijderen het aangetaste weefsel en bouwen de tand laag voor laag opnieuw op met composiet. Het resultaat is onopvallend en de tand is dezelfde dag weer sterk.",
-    featured: true,
   },
   {
     number: "03",
@@ -70,7 +64,6 @@ const treatmentsNl: Treatment[] = [
     duration: "45 min",
     price: "40 - 120 €",
     detail: "Een nauwkeurige reiniging boven en onder het tandvlees voor een gezonde mond en om tandverlies te voorkomen.",
-    featured: true,
   },
   { number: "04", name: "Wortelkanaalbehandeling", short: "Behandeling van een geïnfecteerde zenuw om een tand te behouden die anders getrokken moet worden.", duration: "60 min", price: "140 - 400 €", detail: "We verwijderen het geïnfecteerde weefsel, ontsmetten de kanalen en sluiten de tand om hem duurzaam te behouden." },
   { number: "05", name: "Extractie", short: "Verwijdering van een zwaar beschadigde tand of verstandskies onder plaatselijke verdoving.", duration: "45 min", price: "60 - 180 €", detail: "Een extractie is altijd een gezamenlijke beslissing. Voor we beginnen, leggen we uit welke vervanging mogelijk is." },

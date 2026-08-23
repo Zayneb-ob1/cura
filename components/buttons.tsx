@@ -8,7 +8,7 @@ export function ButtonLink({
 }: {
   href: string;
   children: ReactNode;
-  tone?: "green" | "outline" | "light";
+  tone?: "green" | "outline";
 }) {
   return (
     <Link className={`button-link button-link--${tone}`} href={href}>

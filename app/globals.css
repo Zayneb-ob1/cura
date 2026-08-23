@@ -112,14 +112,6 @@ textarea {
   color: var(--night);
 }
 
-.serif {
-  font-family: var(--serif);
-}
-
-.page-dark {
-  background: var(--charcoal);
-}
-
 .page-paper {
   background: var(--paper);
   color: var(--ink);
@@ -377,11 +369,6 @@ textarea {
   color: #7b7c77;
 }
 
-.button-link--light {
-  background: var(--paper-soft);
-  color: #353834;
-}
-
 .site-footer {
   --footer-gutter: clamp(20px, 3vw, 42px);
   position: relative;
@@ -604,10 +591,6 @@ textarea {
   margin: 28px 0 0;
   color: #b9b9b4;
   font-size: 17px;
-}
-
-.dark-intro .page-intro__copy {
-  color: #a8aaa5;
 }
 
 .form-field {
@@ -1640,15 +1623,6 @@ textarea {
 .treatment-row .button-link {
   min-width: 145px;
   min-height: 46px;
-}
-
-.page-crumb {
-  margin: 0 0 32px;
-  display: flex;
-  gap: 48px;
-  color: #b1b1ac;
-  font-size: 11px;
-  text-transform: uppercase;
 }
 
 /* Cabinet */
@@ -2726,8 +2700,7 @@ textarea {
   color: #9da29d;
 }
 
-.page-paper .editorial-title,
-.patient-prep .editorial-title {
+.page-paper .editorial-title {
   color: #252824;
 }
 
@@ -2737,16 +2710,14 @@ textarea {
 .faq-section details p,
 .treatment-row p,
 .appointment-page__intro > p,
-.appointment-summary p,
-.patient-prep__grid > div:last-child > p {
+.appointment-summary p {
   color: #555954;
 }
 
 .advice-cards h2,
 .faq-section summary,
 .treatment-row__title h2,
-.appointment-summary h2,
-.patient-prep dt {
+.appointment-summary h2 {
   color: #343733;
 }
 
@@ -2760,31 +2731,9 @@ textarea {
   font-size: 10px;
 }
 
-.patient-prep dd,
 .appointment-consent {
   color: #626660;
-}
-
-.appointment-consent {
   font-size: 12px;
-}
-
-.patient-page__hero h1,
-.visit-sequence h2 {
-  color: #f1f0eb;
-}
-
-.patient-page__hero > p:last-child,
-.visit-sequence p {
-  color: #c2c6c0;
-}
-
-.visit-sequence h3 {
-  color: #ecebe6;
-}
-
-.visit-sequence h3 span {
-  color: #b6bab4;
 }
 
 .contact-cards h2 {
@@ -2794,9 +2743,4 @@ textarea {
 .contact-cards p {
   color: #555a53;
   font-size: 12px;
-}
-
-.page-dark .button-link--outline {
-  border-color: #a7aaa5;
-  color: #f1f0eb;
 }

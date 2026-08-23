@@ -51,7 +51,7 @@ export default function SoinsPage() {
           </article>
         ))}
       </div>
-      <SiteFooter tone="light" />
+      <SiteFooter />
     </main>
   );
 }
