@@ -4,7 +4,7 @@ import { SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { clinicConfig } from "@/lib/site-config";
+import { useSiteSettings } from "@/components/site-settings-provider";
 
 const pageCopy = {
   fr: {
@@ -45,6 +45,7 @@ const pageCopy = {
 
 export default function NewPatientPage() {
   const { language } = useLanguage();
+  const clinicConfig = useSiteSettings();
   const copy = pageCopy[language];
 
   return (

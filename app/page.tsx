@@ -7,9 +7,9 @@ import { ButtonLink, SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { useSiteSettings } from "@/components/site-settings-provider";
 import { ToothArt } from "@/components/tooth-art";
 import { treatmentsByLanguage } from "@/lib/content";
-import { clinicConfig } from "@/lib/site-config";
 
 type PublicReview = {
   id: string;
@@ -113,6 +113,7 @@ const fixtureReviewIds = new Set([
 
 export default function HomePage() {
   const { language } = useLanguage();
+  const clinicConfig = useSiteSettings();
   const copy = pageCopy[language];
   const homeTreatments = treatmentsByLanguage[language];
   const [managedReviews, setManagedReviews] = useState<PublicReview[] | null>(null);

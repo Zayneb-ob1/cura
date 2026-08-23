@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { useLanguage, type Language } from "@/components/language-provider";
-import { clinicConfig } from "@/lib/site-config";
+import { useSiteSettings } from "@/components/site-settings-provider";
 
 const headerCopy = {
   fr: {
@@ -69,6 +69,7 @@ const languageButtonStyle = {
 export function SiteHeader() {
   const pathname = usePathname();
   const { language, setLanguage } = useLanguage();
+  const clinicConfig = useSiteSettings();
   const copy = headerCopy[language];
 
   return (

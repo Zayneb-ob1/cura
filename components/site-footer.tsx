@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { useLanguage, type Language } from "@/components/language-provider";
-import { clinicConfig } from "@/lib/site-config";
+import { useSiteSettings } from "@/components/site-settings-provider";
 
 const footerCopy = {
   fr: {
@@ -85,6 +85,7 @@ const footerCopy = {
 
 export function SiteFooter() {
   const { language } = useLanguage();
+  const clinicConfig = useSiteSettings();
   const copy = footerCopy[language];
   const hours = copy.days.map((day, index) => [day, clinicConfig.hours[index] || "—"] as const);
 

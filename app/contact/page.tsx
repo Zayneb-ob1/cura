@@ -5,8 +5,7 @@ import { SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { hoursByLanguage } from "@/lib/content";
-import { clinicConfig } from "@/lib/site-config";
+import { useSiteSettings } from "@/components/site-settings-provider";
 
 const pageCopy = {
   fr: {
@@ -102,8 +101,10 @@ function isEditableForm(value: unknown): value is EditableForm {
 
 export default function ContactPage() {
   const { language } = useLanguage();
+  const clinicConfig = useSiteSettings();
   const copy = pageCopy[language];
-  const hours = hoursByLanguage[language];
+  const hours = (language === "fr" ? ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"] : ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"])
+    .map((day, index) => [day, clinicConfig.hours[index] || "—"] as const);
   const [subject, setSubject] = useState("general");
   const [submissionState, setSubmissionState] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [formConfig, setFormConfig] = useState<EditableForm | null>(null);

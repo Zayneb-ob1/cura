@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { LanguageProvider } from "@/components/language-provider";
+import { SiteSettingsProvider } from "@/components/site-settings-provider";
 import { createPageMetadata, HAS_PUBLIC_SITE_URL, requestLanguage, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { loadClinicConfig } from "@/lib/site-settings";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -41,7 +43,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const language = await requestLanguage();
+  const [language, siteSettings] = await Promise.all([requestLanguage(), loadClinicConfig()]);
   return (
     <html lang={language}>
       <head>
@@ -50,7 +52,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       </head>
       <body>
         <a className="skip-link" href="#main-content">Aller au contenu / Naar inhoud</a>
-        <LanguageProvider initialLanguage={language}>{children}</LanguageProvider>
+        <SiteSettingsProvider initialSettings={siteSettings}>
+          <LanguageProvider initialLanguage={language}>{children}</LanguageProvider>
+        </SiteSettingsProvider>
       </body>
     </html>
   );

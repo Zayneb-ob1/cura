@@ -21,7 +21,30 @@ const hours = (process.env.NEXT_PUBLIC_CLINIC_HOURS || "")
   .map((value) => value.trim())
   .filter(Boolean);
 
-export const clinicConfig = {
+export type ClinicConfig = {
+  name: string;
+  addressLine1: string;
+  postalCity: string;
+  city: string;
+  phoneDisplay: string;
+  phone: string;
+  email: string;
+  mapUrl: string;
+  schedule: { fr: string; nl: string };
+  emergency: { fr: string; nl: string };
+  legal: {
+    operator: string;
+    registration: string;
+    privacyEmail: string;
+    host: string;
+    retention: { fr: string; nl: string };
+  };
+  hours: string[];
+  hasAddress: boolean;
+  hasPhone: boolean;
+};
+
+export const clinicConfig: ClinicConfig = {
   name: clinicName,
   addressLine1,
   postalCity,
@@ -42,4 +65,4 @@ export const clinicConfig = {
   hours: hours.length === 7 ? hours : [],
   hasAddress: Boolean(addressLine1 || postalCity),
   hasPhone: Boolean(phone && phoneDisplay),
-} as const;
+};

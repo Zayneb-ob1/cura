@@ -76,6 +76,15 @@ type FormConfigs = {
 
 type FormType = keyof FormConfigs;
 
+type ClinicSettings = {
+  phoneDisplay: string;
+  email: string;
+  scheduleFr: string;
+  scheduleNl: string;
+  emergencyFr: string;
+  emergencyNl: string;
+};
+
 const sections: Array<{ id: AdminSection; label: string; icon: string }> = [
   { id: "overview", label: "Vue d’ensemble", icon: "⌂" },
   { id: "contacts", label: "Messages", icon: "✉" },
@@ -83,7 +92,7 @@ const sections: Array<{ id: AdminSection; label: string; icon: string }> = [
   { id: "reviews", label: "Avis", icon: "☆" },
   { id: "doctors", label: "Cabinet / Équipe", icon: "+" },
   { id: "forms", label: "Formulaires", icon: "▤" },
-  { id: "site", label: "Pages du site", icon: "↗" },
+  { id: "site", label: "Informations du site", icon: "↗" },
 ];
 
 const formLabels: Record<FormType, { name: string; href: string }> = {
@@ -158,6 +167,15 @@ const emptyDoctor: DoctorDraft = {
   published: true,
 };
 
+const emptyClinicSettings: ClinicSettings = {
+  phoneDisplay: "",
+  email: "",
+  scheduleFr: "",
+  scheduleNl: "",
+  emergencyFr: "",
+  emergencyNl: "",
+};
+
 function asText(value: unknown, fallback = "—") {
   if (typeof value === "string" && value.trim()) return value;
   if (typeof value === "number") return String(value);
@@ -205,6 +223,7 @@ export default function AdminPage() {
   const [editingDoctorId, setEditingDoctorId] = useState<string | number | null>(null);
   const [doctorDraft, setDoctorDraft] = useState<DoctorDraft>(emptyDoctor);
   const [formConfigs, setFormConfigs] = useState<FormConfigs | null>(null);
+  const [clinicSettings, setClinicSettings] = useState<ClinicSettings | null>(null);
 
   const loadItems = useCallback(async (section: AdminSection, requestedPage = currentPage.current) => {
     setLoading(true);
@@ -267,16 +286,19 @@ export default function AdminPage() {
       }
 
       if (section === "site") {
-        const response = await fetch("/api/admin/session", {
+        const response = await fetch("/api/admin/site-settings", {
           credentials: "same-origin",
           cache: "no-store",
         });
-        const payload = response.ok ? await response.json() as { authenticated?: boolean } : null;
-        if (!payload?.authenticated) {
+        if (response.status === 401) {
           setAuthenticated(false);
           setItems([]);
           return;
         }
+        if (!response.ok) throw new Error(await getErrorMessage(response));
+        const payload = (await response.json()) as { settings?: ClinicSettings };
+        if (!payload.settings) throw new Error("Informations du cabinet incomplètes.");
+        setClinicSettings(payload.settings);
         setItems([]);
         setPagination(emptyPagination);
         currentPage.current = 1;
@@ -343,7 +365,7 @@ export default function AdminPage() {
   }, [activeSection, loadItems]);
 
   useEffect(() => {
-    if (!authenticated || activeSection === "forms") return;
+    if (!authenticated || activeSection === "forms" || activeSection === "site") return;
 
     let interval: number | undefined;
     let refreshPromise: Promise<void> | null = null;
@@ -638,6 +660,35 @@ export default function AdminPage() {
     }
   }
 
+  async function saveClinicSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!clinicSettings) return;
+    setSaving(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const response = await fetch("/api/admin/site-settings", {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(clinicSettings),
+      });
+      if (response.status === 401) {
+        setAuthenticated(false);
+        return;
+      }
+      if (!response.ok) throw new Error(await getErrorMessage(response));
+      const payload = (await response.json()) as { settings?: ClinicSettings };
+      setClinicSettings(payload.settings ?? clinicSettings);
+      setNotice("Informations du cabinet enregistrées.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Enregistrement impossible.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const totalItems = overviewTotals.contacts + overviewTotals.appointments + overviewTotals.reviews + overviewTotals.doctors;
   const { newMessages, pendingAppointments, publishedReviews } = overviewSummary;
   const recentActivity = [
@@ -773,7 +824,7 @@ export default function AdminPage() {
                     : activeSection === "forms"
                       ? `${formConfigs ? 2 : 0} formulaires configurés`
                     : activeSection === "site"
-                      ? `${sitePages.length} pages disponibles`
+                      ? "Coordonnées et pages publiques"
                       : `${pagination.total} élément${pagination.total === 1 ? "" : "s"}`}
               </p>
             </div>
@@ -1114,16 +1165,63 @@ export default function AdminPage() {
               </div>
             )
           ) : activeSection === "site" ? (
-            <div className={styles.siteGrid}>
-              {sitePages.map(([label, href]) => (
-                <a key={href} className={styles.siteCard} href={href} target="_blank" rel="noreferrer">
-                  <span>
-                    <strong>{label}</strong>
-                    <small>{href}</small>
-                  </span>
-                  <b aria-hidden="true">↗</b>
-                </a>
-              ))}
+            <div className={styles.siteManager}>
+              {clinicSettings ? (
+                <form className={`${styles.formConfigCard} ${styles.siteSettingsCard}`} onSubmit={(event) => void saveClinicSettings(event)}>
+                  <div className={styles.formConfigHeader}>
+                    <div>
+                      <p className={styles.eyebrow}>Informations publiques</p>
+                      <h2>Coordonnées du cabinet</h2>
+                    </div>
+                    <a href="/contact" target="_blank" rel="noreferrer">Prévisualiser</a>
+                  </div>
+                  <div className={styles.formSettingsGrid}>
+                    <label>
+                      Téléphone
+                      <input type="tel" required value={clinicSettings.phoneDisplay} onChange={(event) => setClinicSettings((current) => ({ ...(current ?? emptyClinicSettings), phoneDisplay: event.target.value }))} />
+                    </label>
+                    <label>
+                      E-mail
+                      <input type="email" required value={clinicSettings.email} onChange={(event) => setClinicSettings((current) => ({ ...(current ?? emptyClinicSettings), email: event.target.value }))} />
+                    </label>
+                    <label>
+                      Horaires courts — FR
+                      <input required value={clinicSettings.scheduleFr} onChange={(event) => setClinicSettings((current) => ({ ...(current ?? emptyClinicSettings), scheduleFr: event.target.value }))} />
+                    </label>
+                    <label>
+                      Korte openingsuren — NL
+                      <input required value={clinicSettings.scheduleNl} onChange={(event) => setClinicSettings((current) => ({ ...(current ?? emptyClinicSettings), scheduleNl: event.target.value }))} />
+                    </label>
+                    <label>
+                      Urgences — FR
+                      <input required value={clinicSettings.emergencyFr} onChange={(event) => setClinicSettings((current) => ({ ...(current ?? emptyClinicSettings), emergencyFr: event.target.value }))} />
+                    </label>
+                    <label>
+                      Spoed — NL
+                      <input required value={clinicSettings.emergencyNl} onChange={(event) => setClinicSettings((current) => ({ ...(current ?? emptyClinicSettings), emergencyNl: event.target.value }))} />
+                    </label>
+                  </div>
+                  <div className={styles.formConfigActions}>
+                    <span className={styles.settingsHint}>Ces informations apparaissent dans l’en-tête, le contact et le pied de page.</span>
+                    <button className={styles.primaryButton} type="submit" disabled={saving}>
+                      {saving ? "Enregistrement…" : "Enregistrer les informations"}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className={styles.emptyState}>Chargement des informations…</div>
+              )}
+              <div className={styles.siteGrid}>
+                {sitePages.map(([label, href]) => (
+                  <a key={href} className={styles.siteCard} href={href} target="_blank" rel="noreferrer">
+                    <span>
+                      <strong>{label}</strong>
+                      <small>{href}</small>
+                    </span>
+                    <b aria-hidden="true">↗</b>
+                  </a>
+                ))}
+              </div>
             </div>
           ) : loading ? (
             <div className={styles.emptyState}>Chargement des données…</div>

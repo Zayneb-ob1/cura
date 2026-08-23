@@ -884,6 +884,11 @@
   line-height: 1.4;
 }
 
+.siteManager {
+  display: grid;
+  gap: 22px;
+}
+
 .siteGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1236,6 +1241,13 @@
 
 .formConfigActions .secondaryButton {
   text-decoration: none;
+}
+
+.settingsHint {
+  margin-right: auto;
+  color: #73776f;
+  font-size: 10px;
+  line-height: 1.5;
 }
 
 @media (max-width: 980px) {
