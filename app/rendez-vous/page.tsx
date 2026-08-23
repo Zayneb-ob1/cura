@@ -39,8 +39,13 @@ type EditableField = {
 
 type EditableForm = {
   slug: string;
+  enabled: boolean;
   titleFr: string;
   titleNl: string;
+  descriptionFr: string;
+  descriptionNl: string;
+  submitLabelFr: string;
+  submitLabelNl: string;
   fields: EditableField[];
 };
 
@@ -56,7 +61,15 @@ function localizedFieldValue(field: EditableField, language: Language, property:
 function isEditableForm(value: unknown): value is EditableForm {
   if (!value || typeof value !== "object") return false;
   const form = value as Partial<EditableForm>;
-  return typeof form.slug === "string" && Array.isArray(form.fields) && form.fields.every((field) => (
+  return typeof form.slug === "string" &&
+    typeof form.enabled === "boolean" &&
+    typeof form.titleFr === "string" &&
+    typeof form.titleNl === "string" &&
+    typeof form.descriptionFr === "string" &&
+    typeof form.descriptionNl === "string" &&
+    typeof form.submitLabelFr === "string" &&
+    typeof form.submitLabelNl === "string" &&
+    Array.isArray(form.fields) && form.fields.every((field) => (
     field &&
     typeof field === "object" &&
     typeof field.key === "string" &&
@@ -89,6 +102,8 @@ export default function AppointmentPage() {
   const consentField = configuredFields?.find((field) => field.key === "consent");
   const fieldLabel = (field: EditableField, fallback: string) => localizedFieldValue(field, language, "label") || fallback;
   const fieldPlaceholder = (field: EditableField) => localizedFieldValue(field, language, "placeholder") || undefined;
+  const configuredDescription = language === "fr" ? formConfig?.descriptionFr : formConfig?.descriptionNl;
+  const configuredSubmitLabel = language === "fr" ? formConfig?.submitLabelFr : formConfig?.submitLabelNl;
 
   useEffect(() => {
     let active = true;
@@ -175,7 +190,7 @@ export default function AppointmentPage() {
     <main className="appointment-page page-paper">
       <SiteHeader />
       <section className="content-shell appointment-page__intro">
-        <SectionLabel>{copy.label}</SectionLabel><h1 className="editorial-title">{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || copy.title}</h1><p>{copy.intro}</p>
+        <SectionLabel>{copy.label}</SectionLabel><h1 className="editorial-title">{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || copy.title}</h1><p>{configuredDescription || copy.intro}</p>
       </section>
       <section className="content-shell appointment-layout">
         <form className="appointment-form" onSubmit={submitAppointment} aria-busy={submissionState === "sending"}>
@@ -212,7 +227,7 @@ export default function AppointmentPage() {
             </div>
           </div>
           {configuredFields ? consentField && <label className="appointment-consent"><input type="checkbox" name="consent" required={consentField.required} /> {fieldLabel(consentField, copy.consent)}</label> : <label className="appointment-consent"><input type="checkbox" name="consent" required /> {copy.consent}</label>}
-          <button type="submit" className="button-link button-link--green" disabled={submissionState === "sending"}>{submissionState === "sending" ? copy.sending : copy.send}</button>
+          <button type="submit" className="button-link button-link--green" disabled={submissionState === "sending" || formConfig?.enabled === false}>{submissionState === "sending" ? copy.sending : configuredSubmitLabel || copy.send}</button>
           {submissionState !== "idle" && <p className="form-status" role="status" aria-live="polite">{copy[submissionState]}</p>}
         </form>
         <aside className="appointment-summary">
