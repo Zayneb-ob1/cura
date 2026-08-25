@@ -191,7 +191,7 @@ export default function ContactPage() {
             <h2>Kuringenstraat 511<br />4030 Hasselt</h2>
             <dl className="contact-details">
               <div><dt>{copy.phoneLabel}</dt><dd><a href="tel:+3211000000">+32 (0)11 00 00 00</a></dd></div>
-              <div><dt>{copy.emailLabel}</dt><dd><a href="mailto:info@cura-tandarts.be">info@cura-tandarts.be</a></dd></div>
+              <div><dt>{copy.emailLabel}</dt><dd><a href="mailto:contact@curadental.be">contact@curadental.be</a></dd></div>
               <div><dt>{copy.urgencyLabel}</dt><dd><a href="tel:+3211000000">{copy.urgencyValue}</a></dd></div>
             </dl>
             <a className="contact-directions" href="https://www.google.com/maps/dir/?api=1&destination=Kuringenstraat+511%2C+4030+Hasselt%2C+Belgium" target="_blank" rel="noreferrer">{copy.directions}<span aria-hidden="true">→</span></a>

@@ -15,8 +15,10 @@
     "db:import-json": "node scripts/db-import-json.mjs"
   },
   "dependencies": {
+    "@types/nodemailer": "^8.0.1",
     "mysql2": "^3.23.4",
     "next": "16.3.2",
+    "nodemailer": "^9.0.5",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

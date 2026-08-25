@@ -654,6 +654,8 @@ export default function AdminPage() {
                 {section.label}
               </button>
             ))}
+            <a className={styles.tab} href="/admin/reservations"><span aria-hidden="true">✓</span>Réservations</a>
+            <a className={styles.tab} href="/admin/agenda"><span aria-hidden="true">🗓</span>Agenda</a>
           </nav>
           <div className={styles.sidebarFooter}>
             <span>Connecté en tant que</span>

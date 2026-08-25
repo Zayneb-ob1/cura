@@ -24,6 +24,7 @@ const fieldColumns: Record<CollectionName, Record<string, string>> = {
   appointments: {
     firstName: "first_name", lastName: "last_name", email: "email", phone: "phone", care: "care",
     day: "day", time: "preferred_time", note: "note", consent: "consent", language: "language", status: "status",
+    slotTime: "slot_time", durationMin: "duration_min", proposedDay: "proposed_day", proposedTime: "proposed_time",
   },
   reviews: {
     name: "name", quote: "quote", rating: "rating", language: "language", published: "published",

@@ -3,6 +3,7 @@ import { createRecord } from "@/lib/admin/store";
 import { errorResponse } from "@/lib/admin/handlers";
 import { normalizeRecord, readJsonObject } from "@/lib/admin/validation";
 import { getFormConfig } from "@/lib/forms/config";
+import { envoyerContact } from "@/lib/mailer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +17,12 @@ export async function POST(request: NextRequest) {
     const body = await readJsonObject(request);
     const data = normalizeRecord("contacts", body, { creating: true, publicSubmission: true });
     const item = await createRecord("contacts", data);
+
+    try {
+      await envoyerContact(data as Record<string, string>);
+    } catch (mailError) {
+      console.error("Envoi email contact echoue:", mailError);
+    }
     return NextResponse.json(
       { success: true, item },
       { status: 201, headers: { "Cache-Control": "no-store" } },
