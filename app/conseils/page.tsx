@@ -49,24 +49,26 @@ export default function AdvicePage() {
   const copy = pageCopy[language];
 
   return (
-    <main className="advice-page page-paper">
+    <div className="advice-page page-paper">
       <SiteHeader />
-      <section className="content-shell advice-page__intro">
+      <main>
+      <section className="content-shell advice-page__intro" id="main-content" tabIndex={-1}>
         <SectionLabel>{copy.label}</SectionLabel>
         <h1 className="editorial-title">{copy.title}</h1>
         <p>{copy.intro}</p>
       </section>
       <section className="content-shell advice-cards">
         {copy.advice.map(([title, text], index) => (
-          <article key={title}><span>0{index + 1}</span><h2>{title}</h2><p>{text}</p><ButtonLink href="/contact" tone="outline">{copy.contact}</ButtonLink></article>
+          <article key={title}><span aria-hidden="true">0{index + 1}</span><h2>{title}</h2><p>{text}</p><ButtonLink href="/contact" tone="outline">{copy.contact}</ButtonLink></article>
         ))}
       </section>
       <section className="content-shell faq-section" id="faq">
         <SectionLabel>FAQ</SectionLabel>
         <h2 className="editorial-title">{copy.faqTitle}</h2>
-        <div>{copy.faq.map(([question, answer]) => <details key={question}><summary>{question}<span>+</span></summary><p>{answer}</p></details>)}</div>
+        <div>{copy.faq.map(([question, answer]) => <details key={question}><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>)}</div>
       </section>
+      </main>
       <SiteFooter />
-    </main>
+    </div>
   );
 }

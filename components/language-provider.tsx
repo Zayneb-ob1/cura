@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 
 export type Language = "fr" | "nl";
 
@@ -24,8 +25,9 @@ function isLanguage(value: string | null): value is Language {
   return value === "fr" || value === "nl";
 }
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("fr");
+export function LanguageProvider({ children, initialLanguage = "fr" }: { children: ReactNode; initialLanguage?: Language }) {
+  const router = useRouter();
+  const [language, setLanguageState] = useState<Language>(initialLanguage);
 
   const setLanguage = useCallback((nextLanguage: Language) => {
     setLanguageState(nextLanguage);
@@ -36,7 +38,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     } catch {
       // The language still changes when browser storage is unavailable.
     }
-  }, []);
+    document.cookie = `${LANGUAGE_STORAGE_KEY}=${nextLanguage}; Path=/; Max-Age=31536000; SameSite=Lax`;
+
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("lang", nextLanguage);
+      router.replace(`${url.pathname}${url.search}${url.hash}`, { scroll: false });
+    } catch {
+      // The language still changes if the current URL cannot be updated.
+    }
+  }, [router]);
 
   useEffect(() => {
     let active = true;
@@ -48,11 +59,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       // Keep French as the default when browser storage is unavailable.
     }
 
-    const initialLanguage = isLanguage(storedLanguage) ? storedLanguage : "fr";
+    const requestedLanguage = new URLSearchParams(window.location.search).get("lang");
+    const resolvedLanguage = isLanguage(requestedLanguage)
+      ? requestedLanguage
+      : isLanguage(storedLanguage)
+        ? storedLanguage
+        : initialLanguage;
     const task = window.setTimeout(() => {
       if (!active) return;
-      setLanguageState(initialLanguage);
-      document.documentElement.lang = initialLanguage;
+      setLanguageState(resolvedLanguage);
+      document.documentElement.lang = resolvedLanguage;
     }, 0);
 
     const handleStorage = (event: StorageEvent) => {
@@ -68,7 +84,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(task);
       window.removeEventListener("storage", handleStorage);
     };
-  }, []);
+  }, [initialLanguage]);
 
   const value = useMemo(() => ({ language, setLanguage }), [language, setLanguage]);
 

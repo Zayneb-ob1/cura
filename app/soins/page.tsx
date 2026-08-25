@@ -29,9 +29,10 @@ export default function SoinsPage() {
   const treatments = treatmentsByLanguage[language];
 
   return (
-    <main className="treatments-page page-paper">
+    <div className="treatments-page page-paper">
       <SiteHeader />
-      <section className="content-shell page-intro treatments-page__intro">
+      <main>
+      <section className="content-shell page-intro treatments-page__intro" id="main-content" tabIndex={-1}>
         <SectionLabel>{copy.label}</SectionLabel>
         <h1 className="editorial-title page-intro__title">{copy.title}</h1>
         <p className="page-intro__copy">{copy.intro}</p>
@@ -51,7 +52,8 @@ export default function SoinsPage() {
           </article>
         ))}
       </div>
+      </main>
       <SiteFooter />
-    </main>
+    </div>
   );
 }

@@ -7,6 +7,7 @@ import { ButtonLink, SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { useSiteSettings } from "@/components/site-settings-provider";
 import { ToothArt } from "@/components/tooth-art";
 import { treatmentsByLanguage } from "@/lib/content";
 
@@ -20,7 +21,7 @@ type PublicReview = {
 
 const pageCopy = {
   fr: {
-    heroLabel: "Cabinet dentaire · Hasselt",
+    heroLabel: "Cabinet dentaire",
     heroLine1: "PRENDRE SOIN DE",
     heroLine2: "TRAIT POUR TRAIT.",
     heroCopy: "Du contrôle annuel à l’implant : un seul cabinet, une seule équipe, et le temps de tout vous expliquer calmement — avant de commencer.",
@@ -49,20 +50,18 @@ const pageCopy = {
     ],
     figuresLabel: "En chiffres",
     figuresTitle: "Ce que vous pouvez attendre",
-    figures: [["12", "min d’attente en moyenne"], ["9", "soins proposés"], ["6", "jours d’ouverture"]],
-    figuresNote: "Chiffres d’illustration — modifiez-les depuis le tableau de bord, onglet Réglages.",
+    figures: [["—", "attente moyenne"], ["—", "soins proposés"], ["—", "jours d’ouverture"]],
+    figuresNote: "Informations pratiques à confirmer auprès du cabinet.",
     reviewsLabel: "Avis",
     reviewsTitle: "CE QU’ON DIT À PROPOS DE NOUS",
-    reviews: [
-      { stars: "★★★★★", quote: "« Je repoussais depuis quatre ans. On ne m’a rien reproché, et tout a été réglé en trois séances. »", name: "SAMIRA B. · HASSELT" },
-      { stars: "★★★★★", quote: "« Ma fille de six ans y va avec plaisir. Je ne pensais pas écrire ça un jour. »", name: "TOM V. · KURINGEN" },
-      { stars: "★★★★★", quote: "« Un devis clair au départ, et la facture correspondait à l’euro près. »", name: "NATHALIE D. · DIEPENBEEK" },
-    ],
+    noReviews: "Aucun avis vérifié n’est publié pour le moment.",
+    loadingReviews: "Chargement des avis…",
+    reviewsError: "Les avis ne peuvent pas être chargés pour le moment.",
     ctaTitle: "Nous sommes prêts quand vous l’êtes.",
     ctaCopy: "Réservez en ligne en deux minutes. Vous recevez une confirmation sous 24 h.",
   },
   nl: {
-    heroLabel: "Tandartspraktijk · Hasselt",
+    heroLabel: "Tandartspraktijk",
     heroLine1: "ZORG VOOR UW GEBIT",
     heroLine2: "TOT IN ELK DETAIL.",
     heroCopy: "Van de jaarlijkse controle tot een implantaat: één praktijk, één team en de tijd om alles rustig uit te leggen — vóór we beginnen.",
@@ -91,61 +90,91 @@ const pageCopy = {
     ],
     figuresLabel: "In cijfers",
     figuresTitle: "Wat u kunt verwachten",
-    figures: [["12", "min gemiddelde wachttijd"], ["9", "behandelingen"], ["6", "openingsdagen"]],
-    figuresNote: "Illustratieve cijfers — pas ze aan via het dashboard, onder Instellingen.",
+    figures: [["—", "gemiddelde wachttijd"], ["—", "behandelingen"], ["—", "openingsdagen"]],
+    figuresNote: "Praktische informatie te bevestigen bij de praktijk.",
     reviewsLabel: "Beoordelingen",
     reviewsTitle: "WAT MEN OVER ONS ZEGT",
-    reviews: [
-      { stars: "★★★★★", quote: "« Ik stelde het vier jaar uit. Niemand maakte me een verwijt en alles was in drie afspraken opgelost. »", name: "SAMIRA B. · HASSELT" },
-      { stars: "★★★★★", quote: "« Mijn dochter van zes gaat er graag naartoe. Ik had nooit gedacht dat ik dat zou schrijven. »", name: "TOM V. · KURINGEN" },
-      { stars: "★★★★★", quote: "« Een duidelijke offerte vooraf en een factuur die tot op de euro klopte. »", name: "NATHALIE D. · DIEPENBEEK" },
-    ],
+    noReviews: "Er zijn momenteel geen geverifieerde beoordelingen gepubliceerd.",
+    loadingReviews: "Beoordelingen laden…",
+    reviewsError: "De beoordelingen kunnen momenteel niet worden geladen.",
     ctaTitle: "Wij staan klaar wanneer u dat bent.",
     ctaCopy: "Boek online in twee minuten. U ontvangt binnen 24 uur een bevestiging.",
   },
 } as const;
 
+const fixtureReviewIds = new Set([
+  "review-fr-samira",
+  "review-fr-tom",
+  "review-fr-nathalie",
+  "review-nl-samira",
+  "review-nl-tom",
+  "review-nl-nathalie",
+]);
+
 export default function HomePage() {
   const { language } = useLanguage();
+  const clinicConfig = useSiteSettings();
   const copy = pageCopy[language];
   const homeTreatments = treatmentsByLanguage[language];
   const [managedReviews, setManagedReviews] = useState<PublicReview[] | null>(null);
+  const [reviewsState, setReviewsState] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
+    const loadingTask = window.setTimeout(() => {
+      if (active) {
+        setManagedReviews(null);
+        setReviewsState("loading");
+      }
+    }, 0);
 
-    fetch(`/api/reviews?language=${language}`, { cache: "no-store" })
+    fetch(`/api/reviews?language=${language}`, { cache: "no-store", signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error("Unable to load reviews");
         return response.json() as Promise<{ items: PublicReview[] }>;
       })
       .then(({ items }) => {
-        if (active) setManagedReviews(items);
+        window.clearTimeout(loadingTask);
+        if (active) {
+          setManagedReviews(items);
+          setReviewsState("ready");
+        }
       })
       .catch(() => {
-        if (active) setManagedReviews(null);
+        window.clearTimeout(loadingTask);
+        if (active && !controller.signal.aborted) {
+          setManagedReviews(null);
+          setReviewsState("error");
+        }
       });
 
     return () => {
       active = false;
+      window.clearTimeout(loadingTask);
+      controller.abort();
     };
   }, [language]);
 
-  const visibleReviews = managedReviews === null
-    ? copy.reviews
-    : managedReviews.map((review) => ({
+  const visibleReviews = (managedReviews ?? [])
+    .filter((review) => !fixtureReviewIds.has(review.id))
+    .map((review) => ({
+        id: review.id,
+        rating: review.rating,
         stars: "\u2605".repeat(Math.max(1, Math.min(5, review.rating))),
         quote: review.quote,
         name: review.name,
       }));
+  const heroLabel = clinicConfig.city ? `${copy.heroLabel} · ${clinicConfig.city}` : copy.heroLabel;
 
   return (
-    <main className="home-page">
+    <div className="home-page">
       <SiteHeader />
-      <section className="home-hero">
+      <main>
+      <section className="home-hero" id="main-content" tabIndex={-1}>
         <div className="content-shell home-hero__grid">
           <div className="home-hero__content">
-            <SectionLabel>{copy.heroLabel}</SectionLabel>
+            <SectionLabel>{heroLabel}</SectionLabel>
             <h1>{copy.heroLine1}<span>{copy.heroLine2}</span></h1>
             <p>{copy.heroCopy}</p>
             <div className="home-hero__actions">
@@ -154,7 +183,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="home-hero__visual" aria-hidden="true">
-            <Image className="home-hero__logo" src="/brand/cura-tooth.png" alt="" width={656} height={784} priority />
+            <Image className="home-hero__logo" src="/brand/cura-tooth.png" alt="" width={656} height={784} sizes="(max-width: 720px) 60vw, 40vw" priority fetchPriority="high" />
           </div>
         </div>
       </section>
@@ -183,7 +212,7 @@ export default function HomePage() {
           <SectionLabel>{copy.visitLabel}</SectionLabel>
           <h2 className="editorial-title">{copy.visitTitle}</h2>
           <div className="home-steps__grid">
-            {copy.steps.map(([number, title, text]) => <article key={number}><span>{number}</span><h3>{title}</h3><p>{text}</p></article>)}
+            {copy.steps.map(([number, title, text]) => <article key={number}><span aria-hidden="true">{number}</span><h3>{title}</h3><p>{text}</p></article>)}
           </div>
         </div>
       </section>
@@ -197,7 +226,7 @@ export default function HomePage() {
             <ul>{copy.clinicPoints.map((point) => <li key={point}>{point}</li>)}</ul>
           </div>
           <aside>
-            <Image className="home-clinic__watermark" src="/brand/cura-tooth.png" alt="" width={656} height={784} aria-hidden="true" />
+            <Image className="home-clinic__watermark" src="/brand/cura-tooth.png" alt="" width={656} height={784} sizes="(max-width: 720px) 80vw, 40vw" quality={45} aria-hidden="true" />
             <SectionLabel>{copy.figuresLabel}</SectionLabel>
             <h3>{copy.figuresTitle}</h3>
             <div className="home-clinic__numbers">{copy.figures.map(([number, label]) => <p key={label}><strong>{number}</strong><span>{label}</span></p>)}</div>
@@ -210,9 +239,15 @@ export default function HomePage() {
         <div className="content-shell">
           <SectionLabel>{copy.reviewsLabel}</SectionLabel>
           <h2 className="editorial-title">{copy.reviewsTitle}</h2>
-          <div className="home-reviews__grid">
-            {visibleReviews.map((review) => <article key={review.name}><span className="home-reviews__stars">{review.stars}</span><blockquote>{review.quote}</blockquote><p>{review.name}</p></article>)}
-          </div>
+          {reviewsState === "loading" ? (
+            <p role="status" aria-live="polite">{copy.loadingReviews}</p>
+          ) : reviewsState === "error" ? (
+            <p role="alert">{copy.reviewsError}</p>
+          ) : visibleReviews.length > 0 ? (
+            <div className="home-reviews__grid">
+              {visibleReviews.map((review) => <article key={review.id}><span className="home-reviews__stars" aria-label={`${review.rating} / 5`}>{review.stars}</span><blockquote>{review.quote}</blockquote><p>{review.name}</p></article>)}
+            </div>
+          ) : <p>{copy.noReviews}</p>}
         </div>
       </section>
 
@@ -221,7 +256,8 @@ export default function HomePage() {
         <p>{copy.ctaCopy}</p>
         <ButtonLink href="/rendez-vous">{copy.appointment}</ButtonLink>
       </section>
+      </main>
       <SiteFooter />
-    </main>
+    </div>
   );
 }

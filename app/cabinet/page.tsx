@@ -10,12 +10,10 @@ const pageCopy = {
   fr: {
     label: "Le cabinet",
     title: "Une équipe, une adresse, et le temps d’écouter.",
-    intro: "CURA réunit à Hasselt les soins généraux, la prothèse et l’implantologie — pour vous éviter d’aller de cabinet en cabinet.",
-    team: [
-      ["DR", "Dr. [Nom]", "Dentiste · soins généraux", "Contrôle, soins conservateurs, endodontie. Assure le suivi de la majorité des patients."],
-      ["DR", "Dr. [Nom]", "Prothèse & implantologie", "Couronnes, facettes, prothèses et implants, de la planification à la pose."],
-      ["MD", "[Prénom]", "Hygiène & accueil", "Détartrage, conseils d’hygiène, et le premier visage que vous croisez."],
-    ],
+    intro: "Découvrez l’équipe du cabinet et les domaines de soins présentés sur ce site.",
+    teamLoading: "Chargement de l’équipe…",
+    teamError: "L’équipe ne peut pas être chargée pour le moment.",
+    noTeam: "Aucun profil d’équipe vérifié n’est publié pour le moment.",
     equipment: "Équipement",
     equipmentTitle: "Une technique qui raccourcit la visite, pas la facture.",
     equipmentItems: ["Radiographie panoramique numérique", "Caméra intra-orale — vous voyez ce que nous voyons", "Détartrage à ultrasons", "Endodontie rotative pour des traitements de canal plus courts", "Stérilisation autoclave classe B, tracée"],
@@ -26,12 +24,10 @@ const pageCopy = {
   nl: {
     label: "De praktijk",
     title: "Eén team, één adres en tijd om te luisteren.",
-    intro: "CURA verenigt in Hasselt algemene tandzorg, prothetiek en implantologie. U hoeft niet van praktijk naar praktijk te gaan.",
-    team: [
-      ["DR", "Dr. [Naam]", "Tandarts · algemene zorg", "Controle, conserverende zorg en endodontie. Volgt het merendeel van onze patiënten op."],
-      ["DR", "Dr. [Naam]", "Prothetiek & implantologie", "Planning, chirurgie en vaste restauraties, van het eerste onderzoek tot de controle."],
-      ["MD", "[Voornaam]", "Hygiëne & onthaal", "Tandsteenverwijdering, advies over mondhygiëne en het eerste gezicht dat u ontmoet."],
-    ],
+    intro: "Ontdek het team van de praktijk en de zorggebieden die op deze website worden voorgesteld.",
+    teamLoading: "Team laden…",
+    teamError: "Het team kan momenteel niet worden geladen.",
+    noTeam: "Er is momenteel geen geverifieerd teamprofiel gepubliceerd.",
     equipment: "Uitrusting",
     equipmentTitle: "Techniek die het bezoek verkort, niet de rekening.",
     equipmentItems: ["Digitale panoramische radiografie", "Intra-orale camera — u ziet wat wij zien", "Ultrasone tandsteenverwijdering", "Roterende endodontie voor kortere wortelkanaalbehandelingen", "Traceerbare klasse B-autoclaafsterilisatie"],
@@ -56,39 +52,55 @@ export default function CabinetPage() {
   const { language } = useLanguage();
   const copy = pageCopy[language];
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [teamState, setTeamState] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     let active = true;
-    fetch("/api/doctors", { cache: "no-store" })
+    const controller = new AbortController();
+    fetch("/api/doctors", { cache: "no-store", signal: controller.signal })
       .then((response) => response.ok ? response.json() as Promise<{ items?: Doctor[] }> : Promise.reject())
       .then((payload) => {
-        if (active && Array.isArray(payload.items)) setDoctors(payload.items);
+        if (active && Array.isArray(payload.items)) {
+          setDoctors(payload.items);
+          setTeamState("ready");
+        }
       })
-      .catch(() => undefined);
-    return () => { active = false; };
+      .catch(() => {
+        if (active && !controller.signal.aborted) setTeamState("error");
+      });
+    return () => {
+      active = false;
+      controller.abort();
+    };
   }, []);
 
-  const team = doctors.length > 0
-    ? doctors.map((doctor) => [
-        doctor.initials,
-        language === "fr" ? doctor.nameFr : doctor.nameNl,
-        language === "fr" ? doctor.roleFr : doctor.roleNl,
-        language === "fr" ? doctor.bioFr : doctor.bioNl,
-      ])
-    : copy.team;
+  const verifiedDoctors = doctors.filter((doctor) => {
+    const localizedName = language === "fr" ? doctor.nameFr : doctor.nameNl;
+    return localizedName.trim() && !/[\[\]]/.test(localizedName);
+  });
+  const team = verifiedDoctors.map((doctor) => [
+    doctor.initials,
+    language === "fr" ? doctor.nameFr : doctor.nameNl,
+    language === "fr" ? doctor.roleFr : doctor.roleNl,
+    language === "fr" ? doctor.bioFr : doctor.bioNl,
+  ]);
 
   return (
-    <main className="cabinet-page page-paper">
+    <div className="cabinet-page page-paper">
       <SiteHeader />
-      <section className="content-shell cabinet-page__intro">
+      <main>
+      <section className="content-shell cabinet-page__intro" id="main-content" tabIndex={-1}>
         <SectionLabel>{copy.label}</SectionLabel>
         <h1 className="editorial-title">{copy.title}</h1>
         <p>{copy.intro}</p>
-        <div className="team-grid">
-          {team.map(([initials, name, role, text]) => (
-            <article key={role}><strong>{initials}</strong><h2>{name}</h2><span>{role}</span><p>{text}</p></article>
+        {teamState === "loading" ? <p role="status" aria-live="polite">{copy.teamLoading}</p>
+          : teamState === "error" ? <p role="alert">{copy.teamError}</p>
+          : team.length === 0 ? <p>{copy.noTeam}</p>
+          : <div className="team-grid">
+          {team.map(([initials, name, role, text], index) => (
+            <article key={`${name}-${index}`}><strong>{initials}</strong><h2>{name}</h2><span>{role}</span><p>{text}</p></article>
           ))}
-        </div>
+        </div>}
       </section>
       <section className="content-shell cabinet-equipment">
         <div>
@@ -108,7 +120,8 @@ export default function CabinetPage() {
           </div>
         </aside>
       </section>
+      </main>
       <SiteFooter />
-    </main>
+    </div>
   );
 }

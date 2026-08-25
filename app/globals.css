@@ -2,7 +2,7 @@
 
 @font-face {
   font-family: "Cura Serif";
-  src: url("/fonts/cormorant-400.ttf") format("truetype");
+  src: url("/fonts/cormorant-400.woff2") format("woff2");
   font-style: normal;
   font-weight: 400;
   font-display: swap;
@@ -10,7 +10,7 @@
 
 @font-face {
   font-family: "Cura Serif";
-  src: url("/fonts/cormorant-500.ttf") format("truetype");
+  src: url("/fonts/cormorant-500.woff2") format("woff2");
   font-style: normal;
   font-weight: 500;
   font-display: swap;
@@ -18,7 +18,7 @@
 
 @font-face {
   font-family: "Cura Serif";
-  src: url("/fonts/cormorant-600.ttf") format("truetype");
+  src: url("/fonts/cormorant-600.woff2") format("woff2");
   font-style: normal;
   font-weight: 600;
   font-display: swap;
@@ -26,7 +26,7 @@
 
 @font-face {
   font-family: "Cura Sans";
-  src: url("/fonts/inter-300.ttf") format("truetype");
+  src: url("/fonts/inter-300.woff2") format("woff2");
   font-style: normal;
   font-weight: 300;
   font-display: swap;
@@ -34,7 +34,7 @@
 
 @font-face {
   font-family: "Cura Sans";
-  src: url("/fonts/inter-400.ttf") format("truetype");
+  src: url("/fonts/inter-400.woff2") format("woff2");
   font-style: normal;
   font-weight: 400;
   font-display: swap;
@@ -42,7 +42,7 @@
 
 @font-face {
   font-family: "Cura Sans";
-  src: url("/fonts/inter-500.ttf") format("truetype");
+  src: url("/fonts/inter-500.woff2") format("woff2");
   font-style: normal;
   font-weight: 500;
   font-display: swap;
@@ -50,7 +50,7 @@
 
 @font-face {
   font-family: "Cura Sans";
-  src: url("/fonts/inter-600.ttf") format("truetype");
+  src: url("/fonts/inter-600.woff2") format("woff2");
   font-style: normal;
   font-weight: 600;
   font-display: swap;
@@ -95,6 +95,28 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+.skip-link {
+  position: fixed;
+  z-index: 1000;
+  top: 10px;
+  left: 10px;
+  padding: 10px 14px;
+  border-radius: 3px;
+  background: var(--white);
+  color: var(--night);
+  font-weight: 600;
+  transform: translateY(-160%);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--gold) !important;
+  outline-offset: 3px;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -120,6 +142,85 @@ textarea {
 .content-shell {
   width: min(calc(100% - 64px), 1280px);
   margin-inline: auto;
+}
+
+.framework-state-page {
+  min-height: 100vh;
+}
+
+.framework-state {
+  min-height: 54vh;
+  padding-block: clamp(72px, 10vw, 132px);
+}
+
+.framework-state .editorial-title {
+  max-width: 760px;
+  margin: 16px 0 20px;
+}
+
+.framework-state > p:not(.section-label) {
+  max-width: 620px;
+  margin: 0 0 32px;
+  color: var(--muted-dark);
+}
+
+.framework-state > .button-link {
+  width: fit-content;
+}
+
+.framework-state__skeleton {
+  width: min(100%, 720px);
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.framework-state__skeleton span {
+  height: 16px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #e3ded3 25%, #f5f2eb 50%, #e3ded3 75%);
+  background-size: 200% 100%;
+  animation: framework-state-loading 1.4s ease-in-out infinite;
+}
+
+.framework-state__skeleton span:first-child {
+  width: 72%;
+  height: 48px;
+}
+
+.framework-state__skeleton span:last-child {
+  width: 58%;
+}
+
+.framework-state__status {
+  margin-top: 22px !important;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@keyframes framework-state-loading {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .framework-state__skeleton span {
+    animation: none;
+  }
 }
 
 .site-header {
@@ -384,7 +485,8 @@ textarea {
   min-height: 330px;
 }
 
-.site-footer__background-word {
+.site-footer::before {
+  content: "CURA";
   display: block;
   position: absolute;
   z-index: 0;
@@ -2743,4 +2845,49 @@ textarea {
 .contact-cards p {
   color: #555a53;
   font-size: 12px;
+}
+
+/* Accessible contrast and hit areas; geometry remains aligned with the design. */
+.page-paper .section-label,
+.home-services .section-label,
+.home-steps .section-label,
+.home-clinic .section-label,
+.home-reviews .section-label,
+.team-grid span {
+  color: #806838;
+}
+
+.home-hero .section-label {
+  color: #927a4c;
+}
+
+.site-header__appointment,
+.home-hero .button-link,
+.home-cta .button-link,
+.home-services > .content-shell > .button-link {
+  background: #887044;
+}
+
+.home-steps__grid span,
+.home-clinic aside .section-label {
+  color: #806838;
+}
+
+.utility-languages > span {
+  min-width: 42px;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.utility-languages button {
+  width: 100%;
+  min-height: 30px;
+}
+
+@media (max-width: 820px) {
+  .site-nav a {
+    min-height: 24px;
+  }
 }

@@ -14,16 +14,47 @@ export class ApiError extends Error {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const PHONE_PATTERN = /^(?=(?:\D*\d){6,})[+()\d\s./-]{6,50}$/;
+const MAX_JSON_BODY_BYTES = 100_000;
 
 export async function readJsonObject(request: Request): Promise<JsonObject> {
-  const declaredLength = Number(request.headers.get("content-length") ?? 0);
-  if (Number.isFinite(declaredLength) && declaredLength > 100_000) {
+  const contentType = request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
+  if (contentType !== "application/json") throw new ApiError(415, "Content-Type must be application/json");
+
+  const contentLength = request.headers.get("content-length");
+  const declaredLength = contentLength === null ? null : Number(contentLength);
+  if (declaredLength !== null && (!Number.isSafeInteger(declaredLength) || declaredLength < 0)) {
+    throw new ApiError(400, "Invalid Content-Length header");
+  }
+  if (declaredLength !== null && declaredLength > MAX_JSON_BODY_BYTES) {
     throw new ApiError(413, "Request body is too large");
+  }
+
+  const reader = request.body?.getReader();
+  if (!reader) throw new ApiError(400, "A valid JSON body is required");
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  let text = "";
+  let receivedBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      receivedBytes += value.byteLength;
+      if (receivedBytes > MAX_JSON_BODY_BYTES) {
+        await reader.cancel();
+        throw new ApiError(413, "Request body is too large");
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+    text += decoder.decode();
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(400, "A valid UTF-8 JSON body is required");
   }
 
   let value: unknown;
   try {
-    value = await request.json();
+    value = JSON.parse(text);
   } catch {
     throw new ApiError(400, "A valid JSON body is required");
   }
@@ -37,6 +68,20 @@ export async function readJsonObject(request: Request): Promise<JsonObject> {
 
 function hasOwn(input: JsonObject, field: string) {
   return Object.prototype.hasOwnProperty.call(input, field);
+}
+
+const supportedRecordFields: Record<CollectionName, readonly string[]> = {
+  contacts: ["name", "email", "phone", "subject", "message", "language", "status"],
+  appointments: ["firstName", "lastName", "email", "phone", "care", "day", "time", "note", "consent", "language", "status"],
+  reviews: ["name", "quote", "rating", "language", "published"],
+  doctors: ["initials", "nameFr", "nameNl", "roleFr", "roleNl", "bioFr", "bioNl", "order", "published"],
+};
+
+function assertSupportedFields(input: JsonObject, collection: CollectionName, allowId: boolean) {
+  const allowed = new Set(supportedRecordFields[collection]);
+  if (allowId) allowed.add("id");
+  const unsupported = Object.keys(input).filter((key) => !allowed.has(key));
+  if (unsupported.length > 0) throw new ApiError(400, `Unsupported fields: ${unsupported.join(", ")}`);
 }
 
 function stringValue(
@@ -60,6 +105,12 @@ function emailValue(input: JsonObject, required: boolean) {
   const email = stringValue(input, "email", { required, max: 254 });
   if (email !== undefined && !EMAIL_PATTERN.test(email)) throw new ApiError(400, "email is invalid");
   return email?.toLowerCase();
+}
+
+function phoneValue(input: JsonObject, required: boolean) {
+  const phone = stringValue(input, "phone", { required, max: 50, allowEmpty: !required });
+  if (phone && !PHONE_PATTERN.test(phone)) throw new ApiError(400, "phone is invalid");
+  return phone;
 }
 
 function languageValue(input: JsonObject) {
@@ -92,7 +143,7 @@ function normalizeContact(input: JsonObject, creating: boolean) {
   const result: JsonObject = {};
   addDefined(result, "name", stringValue(input, "name", { required: creating, max: 120 }));
   addDefined(result, "email", emailValue(input, creating));
-  addDefined(result, "phone", stringValue(input, "phone", { max: 50, allowEmpty: true }));
+  addDefined(result, "phone", phoneValue(input, false));
   addDefined(result, "subject", stringValue(input, "subject", { required: creating, max: 160 }));
   addDefined(result, "message", stringValue(input, "message", { required: creating, max: 5_000 }));
   addDefined(result, "language", languageValue(input));
@@ -109,10 +160,20 @@ function normalizeAppointment(input: JsonObject, creating: boolean, isPublic: bo
   addDefined(result, "firstName", stringValue(input, "firstName", { required: creating, max: 100 }));
   addDefined(result, "lastName", stringValue(input, "lastName", { required: creating, max: 100 }));
   addDefined(result, "email", emailValue(input, creating));
-  addDefined(result, "phone", stringValue(input, "phone", { required: creating, max: 50 }));
+  addDefined(result, "phone", phoneValue(input, creating));
   addDefined(result, "care", stringValue(input, "care", { max: 200, allowEmpty: true }));
   const day = stringValue(input, "day", { required: creating, max: 10 });
-  if (day !== undefined && !DATE_PATTERN.test(day)) throw new ApiError(400, "day must use YYYY-MM-DD");
+  if (day !== undefined) {
+    if (!DATE_PATTERN.test(day)) throw new ApiError(400, "day must use YYYY-MM-DD");
+    const [year, month, date] = day.split("-").map(Number);
+    const parsed = new Date(Date.UTC(year, month - 1, date));
+    if (parsed.getUTCFullYear() !== year || parsed.getUTCMonth() !== month - 1 || parsed.getUTCDate() !== date) {
+      throw new ApiError(400, "day must be a valid calendar date");
+    }
+    if (isPublic && day < new Date().toISOString().slice(0, 10)) {
+      throw new ApiError(400, "day cannot be in the past");
+    }
+  }
   addDefined(result, "day", day);
   addDefined(result, "time", stringValue(input, "time", { max: 100, allowEmpty: true }));
   addDefined(result, "note", stringValue(input, "note", { max: 5_000, allowEmpty: true }));
@@ -121,6 +182,7 @@ function normalizeAppointment(input: JsonObject, creating: boolean, isPublic: bo
   addDefined(result, "status", statusValue(input, ["pending", "confirmed", "completed", "cancelled"]));
   if (isPublic && input.consent !== true) throw new ApiError(400, "consent is required");
   if (creating) {
+    result.note ??= "";
     result.consent ??= false;
     result.language ??= "fr";
     result.status ??= "pending";
@@ -178,8 +240,9 @@ function normalizeDoctor(input: JsonObject, creating: boolean) {
 export function normalizeRecord(
   collection: CollectionName,
   input: JsonObject,
-  options: { creating: boolean; publicSubmission?: boolean },
+  options: { creating: boolean; publicSubmission?: boolean; allowId?: boolean },
 ) {
+  assertSupportedFields(input, collection, options.allowId === true);
   let result: JsonObject;
   if (collection === "contacts") result = normalizeContact(input, options.creating);
   else if (collection === "appointments") {

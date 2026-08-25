@@ -1,4 +1,5 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import "server-only";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import type { NextRequest, NextResponse } from "next/server";
 
 export const ADMIN_SESSION_COOKIE = "cura_admin_session";
@@ -15,30 +16,26 @@ export type AdminSession = {
 };
 
 function adminUsername() {
-  return process.env.CURA_ADMIN_USERNAME ?? process.env.ADMIN_USERNAME ?? (process.env.NODE_ENV === "production" ? "" : "admin@gmail.com");
+  return process.env.CURA_ADMIN_USERNAME?.trim() ?? "";
 }
 
 function adminPassword() {
-  return process.env.CURA_ADMIN_PASSWORD ?? process.env.ADMIN_PASSWORD ?? (process.env.NODE_ENV === "production" ? "" : "CuraAdmin2026!");
+  return process.env.CURA_ADMIN_PASSWORD ?? "";
 }
 
 function sessionSecret() {
-  return (
-    process.env.CURA_ADMIN_SESSION_SECRET ??
-    process.env.ADMIN_SESSION_SECRET ??
-    `cura-session:${adminUsername()}:${adminPassword()}`
-  );
+  const secret = process.env.CURA_ADMIN_SESSION_SECRET ?? "";
+  return secret.length >= 32 ? secret : "";
 }
 
 function signaturesMatch(left: string, right: string) {
-  const leftBuffer = Buffer.from(left);
-  const rightBuffer = Buffer.from(right);
-
-  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
+  const leftBuffer = createHash("sha256").update(left).digest();
+  const rightBuffer = createHash("sha256").update(right).digest();
+  return timingSafeEqual(leftBuffer, rightBuffer);
 }
 
-function sign(payload: string) {
-  return createHmac("sha256", sessionSecret()).update(payload).digest("base64url");
+function sign(payload: string, secret: string) {
+  return createHmac("sha256", secret).update(payload).digest("base64url");
 }
 
 export function credentialsAreValid(username: string, password: string) {
@@ -53,26 +50,31 @@ export function credentialsAreValid(username: string, password: string) {
 }
 
 export function createAdminSessionToken(username = adminUsername()) {
+  const secret = sessionSecret();
+  if (!username || !secret) throw new Error("Admin authentication environment variables are not configured");
   const payload: SessionPayload = {
     sub: username,
     exp: Date.now() + ADMIN_SESSION_MAX_AGE * 1000,
   };
   const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
 
-  return `${encodedPayload}.${sign(encodedPayload)}`;
+  return `${encodedPayload}.${sign(encodedPayload, secret)}`;
 }
 
 export function readAdminSession(request: NextRequest): AdminSession | null {
+  const configuredUsername = adminUsername();
+  const secret = sessionSecret();
+  if (!configuredUsername || !secret) return null;
   const token = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
   if (!token) return null;
 
   const [encodedPayload, providedSignature, extraPart] = token.split(".");
   if (!encodedPayload || !providedSignature || extraPart) return null;
-  if (!signaturesMatch(providedSignature, sign(encodedPayload))) return null;
+  if (!signaturesMatch(providedSignature, sign(encodedPayload, secret))) return null;
 
   try {
     const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8")) as Partial<SessionPayload>;
-    if (payload.sub !== adminUsername() || typeof payload.exp !== "number" || payload.exp <= Date.now()) {
+    if (payload.sub !== configuredUsername || typeof payload.exp !== "number" || payload.exp <= Date.now()) {
       return null;
     }
 

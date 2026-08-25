@@ -5,6 +5,7 @@ import { SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { useSiteSettings } from "@/components/site-settings-provider";
 import { hoursByLanguage, treatmentsByLanguage } from "@/lib/content";
 
 const pageCopy = {
@@ -13,14 +14,14 @@ const pageCopy = {
     appointment: "Le rendez-vous", care: "Soin demandé", unknown: "Je ne sais pas encore", day: "Jour préféré", time: "Moment", morning: "Matin", afternoon: "Après-midi", any: "Sans préférence",
     details: "Vos coordonnées", firstName: "Prénom", lastName: "Nom", email: "E-mail", phone: "Téléphone", note: "Une information utile", placeholder: "Douleur, appréhension, mobilité réduite…",
     consent: "J’accepte que le cabinet utilise ces informations pour traiter ma demande.", send: "Envoyer ma demande", sending: "Envoi en cours…", success: "Votre demande de rendez-vous a bien été envoyée. Nous vous confirmerons l’heure sous 24 h.", error: "Impossible d’envoyer votre demande pour le moment. Veuillez réessayer.",
-    confirmation: "Confirmation", next: "Ce qui se passe ensuite", nextCopy: "Nous vous rappelons ou vous écrivons sous 24 h pour confirmer l’heure exacte.", address: "Adresse", hours: "Horaires",
+    confirmation: "Confirmation", next: "Ce qui se passe ensuite", nextCopy: "Nous vous rappelons ou vous écrivons sous 24 h pour confirmer l’heure exacte.", address: "Adresse", addressPending: "Coordonnées à confirmer", hours: "Horaires",
   },
   nl: {
     label: "Maak een afspraak", title: "Reserveer uw afspraak in twee minuten.", intro: "Kies de reden, vul uw gegevens in en geef aan wanneer u beschikbaar bent. We bevestigen binnen 24 uur.",
     appointment: "De afspraak", care: "Gewenste behandeling", unknown: "Ik weet het nog niet", day: "Voorkeursdag", time: "Moment", morning: "Voormiddag", afternoon: "Namiddag", any: "Geen voorkeur",
     details: "Uw gegevens", firstName: "Voornaam", lastName: "Naam", email: "E-mail", phone: "Telefoon", note: "Nuttige informatie", placeholder: "Pijn, bezorgdheid, beperkte mobiliteit…",
     consent: "Ik ga ermee akkoord dat de praktijk deze gegevens gebruikt om mijn aanvraag te behandelen.", send: "Mijn aanvraag versturen", sending: "Bezig met versturen…", success: "Uw afspraakaanvraag is goed verzonden. We bevestigen het tijdstip binnen 24 uur.", error: "Uw aanvraag kan momenteel niet worden verzonden. Probeer het opnieuw.",
-    confirmation: "Bevestiging", next: "Wat gebeurt er daarna?", nextCopy: "We bellen of mailen u binnen 24 uur om het exacte tijdstip te bevestigen.", address: "Adres", hours: "Openingsuren",
+    confirmation: "Bevestiging", next: "Wat gebeurt er daarna?", nextCopy: "We bellen of mailen u binnen 24 uur om het exacte tijdstip te bevestigen.", address: "Adres", addressPending: "Contactgegevens te bevestigen", hours: "Openingsuren",
   },
 } as const;
 
@@ -85,6 +86,7 @@ function isEditableForm(value: unknown): value is EditableForm {
 
 export default function AppointmentPage() {
   const { language } = useLanguage();
+  const clinicConfig = useSiteSettings();
   const copy = pageCopy[language];
   const hours = hoursByLanguage[language];
   const treatments = treatmentsByLanguage[language];
@@ -107,10 +109,11 @@ export default function AppointmentPage() {
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
 
     async function loadFormConfig() {
       try {
-        const response = await fetch("/api/forms/appointment", { cache: "no-store" });
+        const response = await fetch("/api/forms/appointment", { cache: "no-store", signal: controller.signal });
         if (!response.ok) return;
         const result = (await response.json()) as { form?: unknown };
         if (active && isEditableForm(result.form)) setFormConfig(result.form);
@@ -122,6 +125,7 @@ export default function AppointmentPage() {
     void loadFormConfig();
     return () => {
       active = false;
+      controller.abort();
     };
   }, []);
 
@@ -187,15 +191,16 @@ export default function AppointmentPage() {
   }
 
   return (
-    <main className="appointment-page page-paper">
+    <div className="appointment-page page-paper">
       <SiteHeader />
-      <section className="content-shell appointment-page__intro">
+      <main>
+      <section className="content-shell appointment-page__intro" id="main-content" tabIndex={-1}>
         <SectionLabel>{copy.label}</SectionLabel><h1 className="editorial-title">{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || copy.title}</h1><p>{configuredDescription || copy.intro}</p>
       </section>
       <section className="content-shell appointment-layout">
         <form className="appointment-form" onSubmit={submitAppointment} aria-busy={submissionState === "sending"}>
           <div className="appointment-form__section">
-            <span>01</span>
+            <span aria-hidden="true">01</span>
             <div>
               <SectionLabel>{copy.appointment}</SectionLabel>
               <div className="appointment-form__grid">
@@ -210,7 +215,7 @@ export default function AppointmentPage() {
             </div>
           </div>
           <div className="appointment-form__section">
-            <span>02</span>
+            <span aria-hidden="true">02</span>
             <div>
               <SectionLabel>{copy.details}</SectionLabel>
               <div className="appointment-form__grid">
@@ -232,11 +237,18 @@ export default function AppointmentPage() {
         </form>
         <aside className="appointment-summary">
           <article><SectionLabel>{copy.confirmation}</SectionLabel><h2>{copy.next}</h2><p>{copy.nextCopy}</p></article>
-          <article><SectionLabel>{copy.address}</SectionLabel><p>Kuringenstraat 511<br />4030 Hasselt<br /><a href="tel:+3211000000">+32 (0)11 00 00 00</a></p></article>
+          <article>
+            <SectionLabel>{copy.address}</SectionLabel>
+            <p>
+              {clinicConfig.hasAddress ? <>{clinicConfig.addressLine1}<br />{clinicConfig.postalCity}</> : copy.addressPending}
+              {clinicConfig.hasPhone && <><br /><a href={`tel:${clinicConfig.phone}`}>{clinicConfig.phoneDisplay}</a></>}
+            </p>
+          </article>
           <article><SectionLabel>{copy.hours}</SectionLabel>{hours.slice(0, 6).map(([day, time]) => <p key={day}><span>{day}</span><b>{time}</b></p>)}</article>
         </aside>
       </section>
+      </main>
       <SiteFooter />
-    </main>
+    </div>
   );
 }
