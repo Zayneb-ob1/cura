@@ -102,15 +102,6 @@ const pageCopy = {
   },
 } as const;
 
-const fixtureReviewIds = new Set([
-  "review-fr-samira",
-  "review-fr-tom",
-  "review-fr-nathalie",
-  "review-nl-samira",
-  "review-nl-tom",
-  "review-nl-nathalie",
-]);
-
 export default function HomePage() {
   const { language } = useLanguage();
   const clinicConfig = useSiteSettings();
@@ -129,7 +120,7 @@ export default function HomePage() {
       }
     }, 0);
 
-    fetch(`/api/reviews?language=${language}`, { cache: "no-store", signal: controller.signal })
+    fetch("/api/reviews", { cache: "no-store", signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error("Unable to load reviews");
         return response.json() as Promise<{ items: PublicReview[] }>;
@@ -157,7 +148,6 @@ export default function HomePage() {
   }, [language]);
 
   const visibleReviews = (managedReviews ?? [])
-    .filter((review) => !fixtureReviewIds.has(review.id))
     .map((review) => ({
         id: review.id,
         rating: review.rating,

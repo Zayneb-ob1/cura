@@ -17,16 +17,9 @@ type DoctorRecord = StoredRecord & {
   published: boolean;
 };
 
-const importedPlaceholderIds = new Set([
-  "doctor-general",
-  "doctor-implantology",
-  "doctor-hygiene",
-]);
-
 export async function GET() {
   try {
-    const items = (await listPublishedDoctors<DoctorRecord>())
-      .filter(({ id }) => !importedPlaceholderIds.has(id));
+    const items = await listPublishedDoctors<DoctorRecord>();
     return NextResponse.json({ items }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return errorResponse(error);

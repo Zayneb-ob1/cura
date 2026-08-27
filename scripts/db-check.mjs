@@ -6,6 +6,7 @@ import { loadDatabaseEnvironment } from "./db-env.mjs";
 const expectedTables = [
   "_cura_migrations",
   "appointments",
+  "blocked_ips",
   "contacts",
   "doctors",
   "form_configs",

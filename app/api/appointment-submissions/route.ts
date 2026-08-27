@@ -5,6 +5,7 @@ import { normalizeRecord, readJsonObject } from "@/lib/admin/validation";
 import { getFormConfig } from "@/lib/forms/config";
 import { assertConfiguredRequiredFields } from "@/lib/forms/validation";
 import { consumeRateLimit, rateLimitHeaders, type RateLimitResult } from "@/lib/security/rate-limit";
+import { isBlockedIp, requestClientIp } from "@/lib/security/blocked-ips";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,13 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   let rateLimit: RateLimitResult | null = null;
   try {
+    const clientIp = requestClientIp(request);
+    if (clientIp && await isBlockedIp(clientIp)) {
+      return NextResponse.json(
+        { error: "Reservation requests from this IP address are blocked" },
+        { status: 403, headers: { "Cache-Control": "no-store" } },
+      );
+    }
     rateLimit = await consumeRateLimit(request, {
       namespace: "public-appointment",
       limit: 5,

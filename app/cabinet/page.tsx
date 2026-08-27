@@ -74,11 +74,7 @@ export default function CabinetPage() {
     };
   }, []);
 
-  const verifiedDoctors = doctors.filter((doctor) => {
-    const localizedName = language === "fr" ? doctor.nameFr : doctor.nameNl;
-    return localizedName.trim() && !/[\[\]]/.test(localizedName);
-  });
-  const team = verifiedDoctors.map((doctor) => [
+  const team = doctors.map((doctor) => [
     doctor.initials,
     language === "fr" ? doctor.nameFr : doctor.nameNl,
     language === "fr" ? doctor.roleFr : doctor.roleNl,

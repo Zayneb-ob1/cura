@@ -6,6 +6,7 @@ import { useLanguage } from "@/components/language-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { useSiteSettings } from "@/components/site-settings-provider";
+import { formatClinicHour } from "@/lib/site-config";
 
 const pageCopy = {
   fr: {
@@ -104,7 +105,7 @@ export default function ContactPage() {
   const clinicConfig = useSiteSettings();
   const copy = pageCopy[language];
   const hours = (language === "fr" ? ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"] : ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"])
-    .map((day, index) => [day, clinicConfig.hours[index] || "—"] as const);
+    .map((day, index) => [day, formatClinicHour(clinicConfig.hours[index], language)] as const);
   const [subject, setSubject] = useState("general");
   const [submissionState, setSubmissionState] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [formConfig, setFormConfig] = useState<EditableForm | null>(null);

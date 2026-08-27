@@ -14,15 +14,6 @@ type ReviewRecord = StoredRecord & {
   published: boolean;
 };
 
-const importedPlaceholderIds = new Set([
-  "review-fr-samira",
-  "review-fr-tom",
-  "review-fr-nathalie",
-  "review-nl-samira",
-  "review-nl-tom",
-  "review-nl-nathalie",
-]);
-
 export async function GET(request: NextRequest) {
   try {
     const language = new URL(request.url).searchParams.get("language");
@@ -32,7 +23,6 @@ export async function GET(request: NextRequest) {
 
     const records = await listPublishedReviews<ReviewRecord>(language ?? undefined);
     const items = records
-      .filter(({ id }) => !importedPlaceholderIds.has(id))
       .map(({ id, name, quote, rating, language: reviewLanguage, createdAt, updatedAt }) => ({
         id,
         name,

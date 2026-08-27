@@ -16,10 +16,24 @@ const legalPrivacyEmail = process.env.NEXT_PUBLIC_LEGAL_PRIVACY_EMAIL?.trim() ||
 const legalHost = process.env.NEXT_PUBLIC_LEGAL_HOST?.trim() || "";
 const legalRetentionFr = process.env.NEXT_PUBLIC_LEGAL_RETENTION_FR?.trim() || "";
 const legalRetentionNl = process.env.NEXT_PUBLIC_LEGAL_RETENTION_NL?.trim() || "";
-const hours = (process.env.NEXT_PUBLIC_CLINIC_HOURS || "")
+const configuredHours = (process.env.NEXT_PUBLIC_CLINIC_HOURS || "")
   .split("|")
   .map((value) => value.trim())
   .filter(Boolean);
+const defaultHours = [
+  "08:30–18:00",
+  "08:30–18:00",
+  "08:30–18:00",
+  "08:30–18:00",
+  "08:30–17:00",
+  "09:00–13:00",
+  "closed",
+];
+
+export function formatClinicHour(value: string | undefined, language: "fr" | "nl") {
+  if (value === "closed") return language === "fr" ? "Fermé" : "Gesloten";
+  return value || "—";
+}
 
 export type ClinicConfig = {
   name: string;
@@ -62,7 +76,7 @@ export const clinicConfig: ClinicConfig = {
     host: legalHost,
     retention: { fr: legalRetentionFr, nl: legalRetentionNl },
   },
-  hours: hours.length === 7 ? hours : [],
+  hours: configuredHours.length === 7 ? configuredHours : defaultHours,
   hasAddress: Boolean(addressLine1 || postalCity),
   hasPhone: Boolean(phone && phoneDisplay),
 };

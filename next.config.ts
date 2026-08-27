@@ -8,6 +8,7 @@ const contentSecurityPolicy = [
   "img-src 'self' blob: data:",
   "font-src 'self' data:",
   `connect-src 'self'${isDevelopment ? " ws: wss:" : ""}`,
+  "frame-src 'self' https://calendar.google.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

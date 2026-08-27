@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { useLanguage, type Language } from "@/components/language-provider";
 import { useSiteSettings } from "@/components/site-settings-provider";
+import { formatClinicHour } from "@/lib/site-config";
 
 const footerCopy = {
   fr: {
@@ -87,7 +88,7 @@ export function SiteFooter() {
   const { language } = useLanguage();
   const clinicConfig = useSiteSettings();
   const copy = footerCopy[language];
-  const hours = copy.days.map((day, index) => [day, clinicConfig.hours[index] || "—"] as const);
+  const hours = copy.days.map((day, index) => [day, formatClinicHour(clinicConfig.hours[index], language)] as const);
 
   return (
     <footer className="site-footer site-footer--dark">

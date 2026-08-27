@@ -39,7 +39,10 @@ export default function ReservationsPage() {
     setItems(Array.isArray(j.items) ? j.items : []);
   }, []);
 
-  useEffect(() => { void charger(); }, [charger]);
+  useEffect(() => {
+    const initialLoad = window.setTimeout(() => void charger(), 0);
+    return () => window.clearTimeout(initialLoad);
+  }, [charger]);
 
   const liste = items
     .filter((r) => (filtre === "pending" ? r.status === "pending" : true))
@@ -54,12 +57,35 @@ export default function ReservationsPage() {
     if (!modal) return;
     setBusy(true);
     try {
-      await fetch(`/api/admin/appointments/${modal.rdv.id}/action`, {
+      const mode = modal.mode;
+      const response = await fetch(`/api/admin/appointments/${modal.rdv.id}/action`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: modal.mode === "confirm" ? "confirm" : "propose", day: form.day, time: form.time, duration: Number(form.duration), message: form.message }),
       });
+      const result = await response.json().catch(() => ({})) as {
+        error?: string;
+        emailSent?: boolean;
+        calendarConfigured?: boolean;
+        calendarSynced?: boolean;
+      };
+      if (!response.ok) throw new Error(result.error || "Impossible de mettre à jour la réservation.");
       setModal(null);
       await charger();
+      try {
+        window.localStorage.setItem("cura-appointments-update", String(Date.now()));
+        window.dispatchEvent(new Event("cura-appointments-update"));
+      } catch {
+        // The reservation is already saved; Agenda will refresh on its next load.
+      }
+      const warnings: string[] = [];
+      if (result.emailSent === false) warnings.push("l’e-mail au patient n’a pas été envoyé");
+      if (mode === "confirm" && result.calendarConfigured === false) warnings.push("Google Agenda n’est pas configuré");
+      if (mode === "confirm" && result.calendarConfigured && result.calendarSynced === false) warnings.push("la synchronisation Google Agenda a échoué");
+      if (warnings.length > 0) {
+        window.alert(`Le statut a été enregistré, mais ${warnings.join(" et ")}.`);
+      }
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Impossible de mettre à jour la réservation.");
     } finally { setBusy(false); }
   };
 

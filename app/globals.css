@@ -81,11 +81,14 @@
 }
 
 html {
+  max-width: 100%;
   scroll-behavior: smooth;
 }
 
 body {
+  max-width: 100%;
   margin: 0;
+  overflow-x: clip;
   background: var(--charcoal);
   color: var(--muted);
   font-family: var(--sans);
@@ -142,6 +145,10 @@ textarea {
 .content-shell {
   width: min(calc(100% - 64px), 1280px);
   margin-inline: auto;
+}
+
+.content-shell > * {
+  min-width: 0;
 }
 
 .framework-state-page {
@@ -442,6 +449,7 @@ textarea {
 }
 
 .button-link {
+  max-width: 100%;
   min-width: 210px;
   min-height: 54px;
   padding: 0 25px;
@@ -711,6 +719,7 @@ textarea {
 .form-field select,
 .form-field textarea {
   width: 100%;
+  min-width: 0;
   min-height: 50px;
   border: 1px solid var(--line-light);
   border-radius: 0;
@@ -762,7 +771,7 @@ textarea {
   }
 
   .site-header {
-    height: 106px;
+    height: 154px;
   }
 
   .site-header__utility {
@@ -770,8 +779,25 @@ textarea {
   }
 
   .utility-details {
+    min-width: 0;
+    flex: 1;
     gap: 20px;
+    overflow: hidden;
     font-size: 11px;
+  }
+
+  .utility-details span,
+  .utility-details a {
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  .utility-details__urgent {
+    display: none;
+  }
+
+  .utility-languages {
+    flex: 0 0 auto;
   }
 
   .site-header__inner {
@@ -786,23 +812,31 @@ textarea {
 
   .site-nav {
     position: absolute;
-    left: 16px;
-    right: 16px;
+    left: 0;
+    right: 0;
     top: 72px;
-    height: auto;
-    padding: 13px 0;
+    height: 48px;
+    padding: 0 24px;
     justify-content: flex-start;
+    gap: 22px;
     overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
     background: var(--charcoal);
     border-top: 1px solid var(--line-dark);
   }
 
+  .site-nav::-webkit-scrollbar {
+    display: none;
+  }
+
   .site-nav a {
-    height: auto;
+    height: 48px;
+    flex: 0 0 auto;
   }
 
   .site-nav a::after {
-    bottom: -8px;
+    bottom: 7px;
   }
 
   .site-header__appointment {
@@ -816,12 +850,8 @@ textarea {
     font-size: 36px;
   }
 
-  .site-header .logo__descriptor {
-    display: none;
-  }
-
   .page-intro {
-    padding-top: 106px;
+    padding-top: 64px;
   }
 
   .site-footer {
@@ -835,12 +865,43 @@ textarea {
 }
 
 @media (max-width: 540px) {
-  .content-shell {
+  .content-shell,
+  .site-header__inner,
+  .site-header__utility-inner {
     width: min(calc(100% - 40px), 1280px);
+  }
+
+  .site-nav {
+    padding-inline: 20px;
+  }
+
+  .site-header__appointment {
+    min-width: 128px;
+    min-height: 40px;
+    padding-inline: 11px;
+  }
+
+  .site-header .logo {
+    gap: 8px;
+  }
+
+  .site-header .logo__mark {
+    width: 34px;
+    height: 41px;
+  }
+
+  .site-header .logo__name {
+    font-size: 32px;
   }
 
   .utility-details span:not(:first-child) {
     display: none;
+  }
+
+  .utility-details span:first-child {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .utility-languages {
@@ -1146,6 +1207,14 @@ textarea {
 
   .patient-bring dl > div {
     gap: 15px;
+  }
+
+  .patient-bring dt,
+  .patient-bring dd,
+  .patient-details p,
+  .patient-details address {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .patient-apprehension {
@@ -1607,12 +1676,26 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .advice-page__intro,
+  .appointment-page__intro {
+    padding: 64px 0 48px;
+  }
+
+  .advice-cards article {
+    min-height: 0;
+  }
+
+  .faq-section {
+    padding: 76px 0 80px;
+  }
+
   .contact-form {
     padding: 0;
   }
 
   .contact-layout {
     gap: 34px;
+    padding-bottom: 72px;
   }
 
   .contact-page__intro {
@@ -1639,19 +1722,86 @@ textarea {
     padding: 26px 24px;
   }
 
+  .contact-details > div,
+  .contact-cards article:nth-child(2) p,
+  .appointment-summary article:last-child p {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .contact-details dd,
+  .contact-cards b,
+  .appointment-summary b,
+  .appointment-summary a {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
   .contact-form__submit {
     align-items: stretch;
     flex-direction: column;
   }
 
+  .contact-form__submit .button-link {
+    width: 100%;
+    min-width: 0;
+  }
+
   .appointment-form {
-    padding: 22px;
+    padding: 24px 20px;
+  }
+
+  .appointment-form__section {
+    padding: 12px 0 32px;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .appointment-consent input {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+  }
+
+  .appointment-form > .button-link {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .appointment-summary article {
+    padding: 26px 22px;
+  }
+
+  .advice-cards article {
+    padding: 26px 22px;
+  }
+
+  .advice-cards h2 {
+    margin-top: 28px;
+  }
+
+  .advice-cards p {
+    min-height: 0;
+  }
+
+  .advice-cards .button-link {
+    width: fit-content;
+    min-width: 0;
+  }
+
+  .faq-section summary,
+  .contact-faq summary {
+    gap: 16px;
+    font-size: 20px;
+    line-height: 1.25;
   }
 }
 
 @media (max-width: 540px) {
   .editorial-title {
-    font-size: 48px;
+    font-size: clamp(38px, 11vw, 48px);
+    overflow-wrap: anywhere;
   }
 
   .site-footer__grid {
@@ -1944,6 +2094,34 @@ textarea {
 }
 
 @media (max-width: 540px) {
+  .treatment-row {
+    min-height: 0;
+    padding: 42px 20px 44px 46px;
+    gap: 24px;
+  }
+
+  .treatment-row__bar {
+    top: 24px;
+    bottom: 24px;
+    width: 24px;
+  }
+
+  .treatment-row__title h2 {
+    font-size: 32px;
+    line-height: 1.08;
+    overflow-wrap: anywhere;
+  }
+
+  .treatment-row__detail > div {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .treatment-row .button-link {
+    width: 100%;
+    min-width: 0;
+  }
+
   .cabinet-page__intro,
   .cabinet-equipment {
     width: min(calc(100% - 40px), 1440px);
@@ -2001,6 +2179,12 @@ textarea {
 
   .cabinet-practice dl > div {
     gap: 16px;
+  }
+
+  .cabinet-practice dt,
+  .cabinet-practice dd {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -2617,11 +2801,11 @@ textarea {
 @media (max-width: 820px) {
   .home-hero__grid {
     width: min(calc(100% - 48px), 1280px);
-    min-height: max(420px, calc(100svh - 106px));
+    min-height: max(420px, calc(100svh - 154px));
   }
 
   .home-hero {
-    min-height: max(420px, calc(100svh - 106px));
+    min-height: max(420px, calc(100svh - 154px));
   }
 
   .home-hero__logo {
@@ -2675,7 +2859,7 @@ textarea {
 @media (max-width: 600px) {
   .home-hero,
   .home-hero__grid {
-    min-height: max(420px, calc(100svh - 106px));
+    min-height: max(420px, calc(100svh - 154px));
   }
 
   .home-hero__grid {
@@ -2736,9 +2920,18 @@ textarea {
   }
 
   .home-services__grid,
-  .home-steps__grid,
-  .home-clinic__numbers {
+  .home-steps__grid {
     grid-template-columns: 1fr;
+  }
+
+  .home-clinic__numbers {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .home-clinic__numbers span {
+    font-size: 9px;
+    overflow-wrap: anywhere;
   }
 
   .home-services__grid {
@@ -2780,8 +2973,18 @@ textarea {
   }
 
   .home-services > .content-shell > .button-link {
-    width: 100%;
-    min-width: 100%;
+    width: min(100%, 258px);
+    min-width: 0;
+  }
+
+  .home-clinic aside {
+    min-height: 350px;
+    padding: 30px 22px;
+  }
+
+  .home-clinic__watermark {
+    right: -58px;
+    width: 330px;
   }
 
   .home-cta {
@@ -2888,6 +3091,44 @@ textarea {
 
 @media (max-width: 820px) {
   .site-nav a {
-    min-height: 24px;
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 600px) {
+  img,
+  svg {
+    max-width: 100%;
+  }
+
+  .form-field label {
+    font-size: 10px;
+  }
+
+  .form-field input,
+  .form-field select,
+  .form-field textarea,
+  .contact-form .form-field input,
+  .contact-form .form-field select,
+  .contact-form .form-field textarea {
+    font-size: 16px;
+  }
+
+  .form-field input[type="date"] {
+    display: block;
+    min-width: 0;
+  }
+
+  .button-link,
+  .contact-directions,
+  .patient-details__directions {
+    min-height: 48px;
+  }
+
+  .appointment-page__intro > p,
+  .advice-page__intro > p,
+  .page-intro__copy {
+    font-size: 15px;
+    line-height: 1.7;
   }
 }

@@ -84,6 +84,12 @@ function isEditableForm(value: unknown): value is EditableForm {
   ));
 }
 
+function limitDateToFourDigitYear(event: FormEvent<HTMLInputElement>) {
+  const input = event.currentTarget;
+  const normalized = input.value.replace(/^(\d{4})\d+(-\d{2}-\d{2})$/, "$1$2");
+  if (normalized !== input.value) input.value = normalized;
+}
+
 export default function AppointmentPage() {
   const { language } = useLanguage();
   const clinicConfig = useSiteSettings();
@@ -180,7 +186,7 @@ export default function AppointmentPage() {
 
   function renderAppointmentField(field: EditableField) {
     if (field.key === "care") return <div className="form-field appointment-form__wide" key={field.key}><label htmlFor="care">{fieldLabel(field, copy.care)}</label><select id="care" name="care" required={field.required} value={care} onChange={(event) => setCare(event.target.value)}><option value="">{fieldPlaceholder(field) || copy.unknown}</option>{treatments.map((item) => <option key={item.number} value={item.number}>{item.name}</option>)}</select></div>;
-    if (field.key === "day") return <div className="form-field" key={field.key}><label htmlFor="preferred-day">{fieldLabel(field, copy.day)}</label><input id="preferred-day" name="day" type="date" required={field.required} /></div>;
+    if (field.key === "day") return <div className="form-field" key={field.key}><label htmlFor="preferred-day">{fieldLabel(field, copy.day)}</label><input id="preferred-day" name="day" type="date" max="9999-12-31" onInput={limitDateToFourDigitYear} required={field.required} /></div>;
     if (field.key === "time") return <div className="form-field" key={field.key}><label htmlFor="preferred-time">{fieldLabel(field, copy.time)}</label><select id="preferred-time" name="time" required={field.required}><option>{copy.morning}</option><option>{copy.afternoon}</option><option>{copy.any}</option></select></div>;
     if (field.key === "firstName") return <div className="form-field" key={field.key}><label htmlFor="first-name">{fieldLabel(field, copy.firstName)}</label><input id="first-name" name="firstName" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="given-name" /></div>;
     if (field.key === "lastName") return <div className="form-field" key={field.key}><label htmlFor="last-name">{fieldLabel(field, copy.lastName)}</label><input id="last-name" name="lastName" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="family-name" /></div>;
@@ -207,7 +213,7 @@ export default function AppointmentPage() {
                 {appointmentFields ? appointmentFields.map(renderAppointmentField) : (
                   <>
                     <div className="form-field appointment-form__wide"><label htmlFor="care">{copy.care}</label><select id="care" name="care" value={care} onChange={(event) => setCare(event.target.value)}><option value="">{copy.unknown}</option>{treatments.map((item) => <option key={item.number} value={item.number}>{item.name}</option>)}</select></div>
-                    <div className="form-field"><label htmlFor="preferred-day">{copy.day}</label><input id="preferred-day" name="day" type="date" required /></div>
+                    <div className="form-field"><label htmlFor="preferred-day">{copy.day}</label><input id="preferred-day" name="day" type="date" max="9999-12-31" onInput={limitDateToFourDigitYear} required /></div>
                     <div className="form-field"><label htmlFor="preferred-time">{copy.time}</label><select id="preferred-time" name="time"><option>{copy.morning}</option><option>{copy.afternoon}</option><option>{copy.any}</option></select></div>
                   </>
                 )}

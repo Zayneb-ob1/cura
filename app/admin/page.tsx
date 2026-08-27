@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./admin.module.css";
+import DashboardNavigation from "./dashboard-navigation";
+import reservationStyles from "./gestion.module.css";
 
 type DataSection = "contacts" | "appointments" | "reviews" | "doctors";
-type AdminSection = "overview" | DataSection | "forms" | "site";
+type AdminSection = "overview" | DataSection | "forms" | "site" | "blocked-ips";
 type AdminItem = Record<string, unknown> & { id: string | number };
 
 type OverviewData = Record<DataSection, AdminItem[]>;
@@ -25,6 +28,22 @@ type OverviewSummary = {
   pendingAppointments: number;
   publishedReviews: number;
 };
+
+type AppointmentPreviews = {
+  upcoming: AdminItem[];
+  reservations: AdminItem[];
+};
+
+type AppointmentActionMode = "confirm" | "propose";
+
+type AppointmentActionDraft = {
+  day: string;
+  time: string;
+  duration: string;
+  message: string;
+};
+
+type AppointmentStatus = "pending" | "confirmed" | "completed" | "cancelled";
 
 type ReviewDraft = {
   name: string;
@@ -86,14 +105,16 @@ type ClinicSettings = {
 };
 
 const sections: Array<{ id: AdminSection; label: string; icon: string }> = [
-  { id: "overview", label: "Vue d’ensemble", icon: "⌂" },
-  { id: "contacts", label: "Messages", icon: "✉" },
-  { id: "appointments", label: "Rendez-vous", icon: "◷" },
   { id: "reviews", label: "Avis", icon: "☆" },
   { id: "doctors", label: "Cabinet / Équipe", icon: "+" },
   { id: "forms", label: "Formulaires", icon: "▤" },
   { id: "site", label: "Informations du site", icon: "↗" },
+  { id: "contacts", label: "Messages", icon: "✉" },
+  { id: "blocked-ips", label: "Adresses IP bloquées", icon: "⊘" },
+  { id: "overview", label: "Vue d’ensemble", icon: "⌂" },
 ];
+
+const hashSections = new Set<AdminSection>(["overview", "reviews", "doctors", "forms", "site", "contacts", "blocked-ips"]);
 
 const formLabels: Record<FormType, { name: string; href: string }> = {
   contact: { name: "Formulaire de contact", href: "/contact" },
@@ -133,6 +154,18 @@ const emptyOverviewSummary: OverviewSummary = {
   newMessages: 0,
   pendingAppointments: 0,
   publishedReviews: 0,
+};
+
+const emptyAppointmentPreviews: AppointmentPreviews = {
+  upcoming: [],
+  reservations: [],
+};
+
+const appointmentStatusMeta: Record<AppointmentStatus, { label: string; background: string; color: string }> = {
+  pending: { label: "En attente", background: "#fdf3d8", color: "#8a6d1a" },
+  confirmed: { label: "Confirmé", background: "#dcefe3", color: "#2f6f4f" },
+  completed: { label: "Terminé", background: "#ecebe6", color: "#62665f" },
+  cancelled: { label: "Annulé", background: "#f7e4df", color: "#8b3428" },
 };
 
 const emptyPagination: Pagination = {
@@ -192,6 +225,46 @@ function formatDate(value: unknown) {
   }).format(date);
 }
 
+function dateOnly(value: unknown) {
+  if (typeof value !== "string") return "";
+  return value.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? "";
+}
+
+function appointmentClock(item: AdminItem) {
+  const confirmedTime = asText(item.slotTime, "");
+  if (/^\d{2}:\d{2}/.test(confirmedTime)) return confirmedTime.slice(0, 5);
+  return asText(item.time, "À préciser");
+}
+
+function appointmentTimestamp(item: AdminItem) {
+  const day = dateOnly(item.day);
+  if (!day) return Number.POSITIVE_INFINITY;
+  const slot = asText(item.slotTime, "").match(/^\d{2}:\d{2}/)?.[0] ?? "23:59";
+  const timestamp = new Date(`${day}T${slot}:00`).getTime();
+  return Number.isNaN(timestamp) ? Number.POSITIVE_INFINITY : timestamp;
+}
+
+function isUpcomingAppointment(item: AdminItem) {
+  return item.status === "confirmed" && appointmentTimestamp(item) >= Date.now();
+}
+
+function formatAppointmentDay(value: unknown) {
+  const day = dateOnly(value);
+  if (!day) return "Date à préciser";
+  const parsed = new Date(`${day}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return day;
+  return new Intl.DateTimeFormat("fr-BE", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(parsed);
+}
+
+function appointmentStatus(value: unknown): AppointmentStatus {
+  return value === "confirmed" || value === "completed" || value === "cancelled" ? value : "pending";
+}
+
 async function getErrorMessage(response: Response) {
   try {
     const payload = (await response.json()) as { error?: string; message?: string };
@@ -204,10 +277,14 @@ async function getErrorMessage(response: Response) {
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [activeSection, setActiveSection] = useState<AdminSection>("overview");
+  const [sectionReady, setSectionReady] = useState(false);
   const [items, setItems] = useState<AdminItem[]>([]);
   const [overviewData, setOverviewData] = useState<OverviewData>(emptyOverview);
   const [overviewTotals, setOverviewTotals] = useState<OverviewTotals>(emptyOverviewTotals);
   const [overviewSummary, setOverviewSummary] = useState<OverviewSummary>(emptyOverviewSummary);
+  const [appointmentPreviews, setAppointmentPreviews] = useState<AppointmentPreviews>(emptyAppointmentPreviews);
+  const [appointmentAction, setAppointmentAction] = useState<{ item: AdminItem; mode: AppointmentActionMode } | null>(null);
+  const [appointmentDraft, setAppointmentDraft] = useState<AppointmentActionDraft>({ day: "", time: "", duration: "30", message: "" });
   const [pagination, setPagination] = useState<Pagination>(emptyPagination);
   const currentPage = useRef(1);
   const previousSection = useRef<AdminSection>("overview");
@@ -224,6 +301,26 @@ export default function AdminPage() {
   const [doctorDraft, setDoctorDraft] = useState<DoctorDraft>(emptyDoctor);
   const [formConfigs, setFormConfigs] = useState<FormConfigs | null>(null);
   const [clinicSettings, setClinicSettings] = useState<ClinicSettings | null>(null);
+  const [blockedIpDraft, setBlockedIpDraft] = useState("");
+
+  useEffect(() => {
+    const syncSectionFromUrl = () => {
+      const requestedSection = window.location.hash.slice(1) as AdminSection;
+      const nextSection = hashSections.has(requestedSection) ? requestedSection : "overview";
+      setShowReviewForm(false);
+      setShowDoctorForm(false);
+      setActiveSection(nextSection);
+      setSectionReady(true);
+    };
+
+    syncSectionFromUrl();
+    window.addEventListener("hashchange", syncSectionFromUrl);
+    window.addEventListener("popstate", syncSectionFromUrl);
+    return () => {
+      window.removeEventListener("hashchange", syncSectionFromUrl);
+      window.removeEventListener("popstate", syncSectionFromUrl);
+    };
+  }, []);
 
   const loadItems = useCallback(async (section: AdminSection, requestedPage = currentPage.current) => {
     setLoading(true);
@@ -232,7 +329,7 @@ export default function AdminPage() {
 
     try {
       if (section === "overview") {
-        const [responses, summaryResponses] = await Promise.all([
+        const [responses, summaryResponses, appointmentPreviewResponses] = await Promise.all([
           Promise.all((["contacts", "appointments", "reviews", "doctors"] as DataSection[]).map((name) =>
             fetch(`/api/admin/${name}?page=1&limit=25`, {
               credentials: "same-origin",
@@ -244,15 +341,21 @@ export default function AdminPage() {
             fetch("/api/admin/appointments?page=1&limit=1&status=pending", { credentials: "same-origin", cache: "no-store" }),
             fetch("/api/admin/reviews?page=1&limit=1&published=true", { credentials: "same-origin", cache: "no-store" }),
           ]),
+          Promise.all([
+            fetch("/api/admin/appointments?page=1&limit=100&status=confirmed", { credentials: "same-origin", cache: "no-store" }),
+            fetch("/api/admin/appointments?page=1&limit=100&status=pending", { credentials: "same-origin", cache: "no-store" }),
+          ]),
         ]);
 
-        if ([...responses, ...summaryResponses].some((response) => response.status === 401)) {
+        const overviewResponses = [...responses, ...summaryResponses, ...appointmentPreviewResponses];
+        if (overviewResponses.some((response) => response.status === 401)) {
           setAuthenticated(false);
           setItems([]);
+          setAppointmentPreviews(emptyAppointmentPreviews);
           return;
         }
 
-        const failedResponse = [...responses, ...summaryResponses].find((response) => !response.ok);
+        const failedResponse = overviewResponses.find((response) => !response.ok);
         if (failedResponse) throw new Error(await getErrorMessage(failedResponse));
 
         const payloads = await Promise.all(
@@ -260,6 +363,9 @@ export default function AdminPage() {
         );
         const summaryPayloads = await Promise.all(
           summaryResponses.map((response) => response.json() as Promise<{ pagination?: Pagination }>),
+        );
+        const appointmentPreviewPayloads = await Promise.all(
+          appointmentPreviewResponses.map((response) => response.json() as Promise<{ items?: AdminItem[] }>),
         );
         setOverviewData({
           contacts: Array.isArray(payloads[0].items) ? payloads[0].items : [],
@@ -277,6 +383,30 @@ export default function AdminPage() {
           newMessages: summaryPayloads[0].pagination?.total ?? 0,
           pendingAppointments: summaryPayloads[1].pagination?.total ?? 0,
           publishedReviews: summaryPayloads[2].pagination?.total ?? 0,
+        });
+        const confirmedItems = Array.isArray(appointmentPreviewPayloads[0].items)
+          ? appointmentPreviewPayloads[0].items
+          : [];
+        const pendingItems = Array.isArray(appointmentPreviewPayloads[1].items)
+          ? appointmentPreviewPayloads[1].items
+          : [];
+        const recentAppointments = Array.isArray(payloads[1].items) ? payloads[1].items : [];
+        const reservationOverview = Array.from(new Map(
+          [...pendingItems, ...recentAppointments].map((item) => [String(item.id), item]),
+        ).values());
+        setAppointmentPreviews({
+          upcoming: confirmedItems
+            .filter(isUpcomingAppointment)
+            .sort((left, right) => appointmentTimestamp(left) - appointmentTimestamp(right))
+            .slice(0, 10),
+          reservations: reservationOverview
+            .sort((left, right) => {
+              const leftPending = appointmentStatus(left.status) === "pending" ? 0 : 1;
+              const rightPending = appointmentStatus(right.status) === "pending" ? 0 : 1;
+              if (leftPending !== rightPending) return leftPending - rightPending;
+              return new Date(asText(right.createdAt, "0")).getTime() - new Date(asText(left.createdAt, "0")).getTime();
+            })
+            .slice(0, 10),
         });
         setPagination(emptyPagination);
         currentPage.current = 1;
@@ -357,12 +487,13 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
+    if (!sectionReady) return;
     const sectionChanged = previousSection.current !== activeSection;
     previousSection.current = activeSection;
     if (sectionChanged) currentPage.current = 1;
     const task = window.setTimeout(() => void loadItems(activeSection, currentPage.current), 0);
     return () => window.clearTimeout(task);
-  }, [activeSection, loadItems]);
+  }, [activeSection, loadItems, sectionReady]);
 
   useEffect(() => {
     if (!authenticated || activeSection === "forms" || activeSection === "site") return;
@@ -393,7 +524,7 @@ export default function AdminPage() {
       startPolling();
     };
     const handleStorage = (event: StorageEvent) => {
-      if (event.key === "cura-dashboard-update") refreshDashboard();
+      if (event.key === "cura-dashboard-update" || event.key === "cura-appointments-update") refreshDashboard();
     };
 
     startPolling();
@@ -448,6 +579,110 @@ export default function AdminPage() {
     }
   }
 
+  function openAppointmentAction(item: AdminItem, mode: AppointmentActionMode) {
+    setAppointmentAction({ item, mode });
+    setAppointmentDraft({
+      day: dateOnly(item.day),
+      time: asText(item.slotTime, ""),
+      duration: asText(item.durationMin, "30"),
+      message: "",
+    });
+    setError("");
+    setNotice("");
+  }
+
+  function notifyAppointmentUpdate() {
+    try {
+      const timestamp = String(Date.now());
+      window.localStorage.setItem("cura-dashboard-update", timestamp);
+      window.localStorage.setItem("cura-appointments-update", timestamp);
+      window.dispatchEvent(new Event("cura-appointments-update"));
+    } catch {
+      // The MySQL mutation is already complete; other views also refresh on focus and polling.
+    }
+  }
+
+  async function submitAppointmentAction() {
+    if (!appointmentAction) return;
+    setSaving(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const response = await fetch(`/api/admin/appointments/${encodeURIComponent(String(appointmentAction.item.id))}/action`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: appointmentAction.mode,
+          day: appointmentDraft.day,
+          time: appointmentDraft.time,
+          duration: Number(appointmentDraft.duration),
+          message: appointmentDraft.message,
+        }),
+      });
+      const payload = await response.json().catch(() => ({})) as {
+        error?: string;
+        emailSent?: boolean;
+        calendarConfigured?: boolean;
+        calendarSynced?: boolean;
+      };
+      if (response.status === 401) {
+        setAuthenticated(false);
+        return;
+      }
+      if (!response.ok) throw new Error(payload.error || "Impossible de mettre à jour la réservation.");
+
+      const mode = appointmentAction.mode;
+      setAppointmentAction(null);
+      notifyAppointmentUpdate();
+      await loadItems("overview");
+      const warnings: string[] = [];
+      if (payload.emailSent === false) warnings.push("l’e-mail au patient n’a pas été envoyé");
+      if (mode === "confirm" && payload.calendarConfigured === false) warnings.push("Google Agenda n’est pas configuré");
+      if (mode === "confirm" && payload.calendarConfigured && payload.calendarSynced === false) warnings.push("la synchronisation Google Agenda a échoué");
+      setNotice(warnings.length > 0
+        ? `Réservation enregistrée, mais ${warnings.join(" et ")}.`
+        : mode === "confirm" ? "Réservation confirmée et ajoutée à l’Agenda." : "Nouveau créneau proposé au patient.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Impossible de mettre à jour la réservation.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function cancelAppointment(item: AdminItem) {
+    const patient = `${asText(item.firstName, "Patient")} ${asText(item.lastName, "")}`.trim();
+    if (!window.confirm(`Annuler la réservation de ${patient} et prévenir le patient par e-mail ?`)) return;
+    setSaving(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const response = await fetch(`/api/admin/appointments/${encodeURIComponent(String(item.id))}/action`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel" }),
+      });
+      const payload = await response.json().catch(() => ({})) as { error?: string; emailSent?: boolean };
+      if (response.status === 401) {
+        setAuthenticated(false);
+        return;
+      }
+      if (!response.ok) throw new Error(payload.error || "Impossible d’annuler la réservation.");
+      notifyAppointmentUpdate();
+      await loadItems("overview");
+      setNotice(payload.emailSent === false
+        ? "Réservation annulée, mais l’e-mail au patient n’a pas été envoyé."
+        : "Réservation annulée et patient prévenu.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Impossible d’annuler la réservation.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function updateItem(id: string | number, fields: Record<string, unknown>) {
     if (!isDataSection(activeSection)) return;
     setSaving(true);
@@ -494,6 +729,59 @@ export default function AdminPage() {
       await loadItems(activeSection);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Suppression impossible.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function addBlockedIp(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const response = await fetch("/api/admin/blocked-ips", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ipAddress: blockedIpDraft.trim() }),
+      });
+      if (response.status === 401) {
+        setAuthenticated(false);
+        return;
+      }
+      if (!response.ok) throw new Error(await getErrorMessage(response));
+      setBlockedIpDraft("");
+      await loadItems("blocked-ips");
+      setNotice("Adresse IP bloquée.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Impossible de bloquer cette adresse IP.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function unblockIp(id: string | number, ipAddress: string) {
+    if (!window.confirm(`Débloquer l’adresse IP ${ipAddress} ?`)) return;
+    setSaving(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const response = await fetch(`/api/admin/blocked-ips/${encodeURIComponent(String(id))}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      if (response.status === 401) {
+        setAuthenticated(false);
+        return;
+      }
+      if (!response.ok) throw new Error(await getErrorMessage(response));
+      await loadItems("blocked-ips");
+      setNotice("Adresse IP débloquée.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Impossible de débloquer cette adresse IP.");
     } finally {
       setSaving(false);
     }
@@ -691,7 +979,15 @@ export default function AdminPage() {
 
   const totalItems = overviewTotals.contacts + overviewTotals.appointments + overviewTotals.reviews + overviewTotals.doctors;
   const { newMessages, pendingAppointments, publishedReviews } = overviewSummary;
-  const recentActivity = [
+  const recentActivity: Array<{
+    id: string;
+    section?: AdminSection;
+    href?: string;
+    type: string;
+    title: string;
+    detail: string;
+    date: unknown;
+  }> = [
     ...overviewData.contacts.map((item) => ({
       id: `contact-${item.id}`,
       section: "contacts" as AdminSection,
@@ -702,8 +998,8 @@ export default function AdminPage() {
     })),
     ...overviewData.appointments.map((item) => ({
       id: `appointment-${item.id}`,
-      section: "appointments" as AdminSection,
-      type: "Rendez-vous",
+      href: "/admin/reservations",
+      type: "Réservation",
       title: `${asText(item.firstName, "Patient")} ${asText(item.lastName, "")}`.trim(),
       detail: asText(item.care, "Soin à préciser"),
       date: item.createdAt,
@@ -788,25 +1084,14 @@ export default function AdminPage() {
             <p>Navigation</p>
             <strong>Gestion du cabinet</strong>
           </div>
-          <nav className={styles.tabs} aria-label="Sections de l’administration">
-            {sections.map((section) => (
-              <button
-                key={section.id}
-                type="button"
-                className={activeSection === section.id ? styles.activeTab : styles.tab}
-                onClick={() => {
-                  setShowReviewForm(false);
-                  setShowDoctorForm(false);
-                  setActiveSection(section.id);
-                }}
-              >
-                <span aria-hidden="true">{section.icon}</span>
-                {section.label}
-              </button>
-            ))}
-            <a className={styles.tab} href="/admin/reservations"><span aria-hidden="true">✓</span>Réservations</a>
-            <a className={styles.tab} href="/admin/agenda"><span aria-hidden="true">🗓</span>Agenda</a>
-          </nav>
+          <DashboardNavigation
+            activeSection={activeSection}
+            onSectionChange={(section) => {
+              setShowReviewForm(false);
+              setShowDoctorForm(false);
+              setActiveSection(section as AdminSection);
+            }}
+          />
           <div className={styles.sidebarFooter}>
             <span>Connecté en tant que</span>
             <strong>Administrateur</strong>
@@ -945,17 +1230,170 @@ export default function AdminPage() {
               <div className={styles.emptyState}>Chargement des données…</div>
             ) : (
               <>
+                <div className={styles.prioritySections}>
+                  <section className={styles.prioritySection} aria-labelledby="reservations-overview-title">
+                    <div className={styles.priorityHeader}>
+                      <div>
+                        <p className={styles.eyebrow}>Réservations</p>
+                        <h2 id="reservations-overview-title">Vue complète des réservations</h2>
+                        <p>Les demandes en attente sont affichées en premier, avec leur statut et les actions essentielles.</p>
+                      </div>
+                      <div className={styles.priorityHeaderAside}>
+                        <span>{pendingAppointments} en attente</span>
+                        <Link className={styles.panelLink} href="/admin/reservations">
+                          Voir toutes les réservations <span aria-hidden="true">→</span>
+                        </Link>
+                      </div>
+                    </div>
+                    <div className={reservationStyles.card}>
+                      <div className={reservationStyles.tableWrap} role="region" aria-label="Aperçu complet des réservations" tabIndex={0}>
+                        <table className={`${reservationStyles.table} ${styles.dashboardReservationTable}`}>
+                          <caption className={styles.tableCaption}>Réservations récentes et en attente de traitement</caption>
+                          <thead>
+                            <tr>
+                              <th>Patient</th>
+                              <th>Contact</th>
+                              <th>Soin</th>
+                              <th>Date</th>
+                              <th>Heure</th>
+                              <th>Durée</th>
+                              <th>Statut</th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {appointmentPreviews.reservations.length === 0 ? (
+                              <tr>
+                                <td className={reservationStyles.empty} colSpan={8}>Aucune réservation pour le moment.</td>
+                              </tr>
+                            ) : appointmentPreviews.reservations.map((item) => {
+                              const status = appointmentStatus(item.status);
+                              const meta = appointmentStatusMeta[status];
+                              const time = status === "confirmed" ? appointmentClock(item) : asText(item.time, "À préciser");
+                              return (
+                                <tr key={item.id}>
+                                  <td><span className={reservationStyles.name}>{asText(item.firstName, "Patient")} {asText(item.lastName, "")}</span></td>
+                                  <td>
+                                    {asText(item.email, "E-mail à préciser")}
+                                    <br />
+                                    <span className={reservationStyles.muted}>{asText(item.phone, "Téléphone à préciser")}</span>
+                                  </td>
+                                  <td>{asText(item.care, "Soin à préciser")}</td>
+                                  <td><strong className={styles.tableDate}>{formatAppointmentDay(item.day)}</strong></td>
+                                  <td>{time}</td>
+                                  <td>{status === "confirmed" ? `${asText(item.durationMin, "30")} min` : "À confirmer"}</td>
+                                  <td>
+                                    <span className={reservationStyles.badge} style={{ background: meta.background, color: meta.color }}>
+                                      {meta.label}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <div className={reservationStyles.actions}>
+                                      {status === "pending" && (
+                                        <>
+                                          <button className={`${reservationStyles.btn} ${reservationStyles.btnConfirm}`} type="button" onClick={() => openAppointmentAction(item, "confirm")} disabled={saving}>Confirmer</button>
+                                          <button className={`${reservationStyles.btn} ${reservationStyles.btnPropose}`} type="button" onClick={() => openAppointmentAction(item, "propose")} disabled={saving}>Proposer</button>
+                                        </>
+                                      )}
+                                      {(status === "pending" || status === "confirmed") && (
+                                        <button className={`${reservationStyles.btn} ${reservationStyles.btnCancel}`} type="button" onClick={() => void cancelAppointment(item)} disabled={saving}>Annuler</button>
+                                      )}
+                                      {(status === "completed" || status === "cancelled") && <span className={reservationStyles.muted}>Aucune action</span>}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className={styles.prioritySection} aria-labelledby="agenda-overview-title">
+                    <div className={styles.priorityHeader}>
+                      <div>
+                        <p className={styles.eyebrow}>Agenda</p>
+                        <h2 id="agenda-overview-title">Prochaines réservations</h2>
+                        <p>Les réservations confirmées à venir, classées par date et heure.</p>
+                      </div>
+                      <div className={styles.priorityHeaderAside}>
+                        <span>{appointmentPreviews.upcoming.length} à venir</span>
+                        <Link className={styles.panelLink} href="/admin/agenda">
+                          Ouvrir l’agenda <span aria-hidden="true">→</span>
+                        </Link>
+                      </div>
+                    </div>
+                    <div className={reservationStyles.card}>
+                      <div className={reservationStyles.tableWrap} role="region" aria-label="Agenda des réservations à venir" tabIndex={0}>
+                        <table className={`${reservationStyles.table} ${styles.dashboardAgendaTable}`}>
+                          <caption className={styles.tableCaption}>Réservations confirmées à venir</caption>
+                          <thead>
+                            <tr>
+                              <th>Date</th>
+                              <th>Heure</th>
+                              <th>Durée</th>
+                              <th>Patient</th>
+                              <th>Soin</th>
+                              <th>Statut</th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {appointmentPreviews.upcoming.length === 0 ? (
+                              <tr>
+                                <td className={reservationStyles.empty} colSpan={7}>Aucune réservation confirmée à venir.</td>
+                              </tr>
+                            ) : appointmentPreviews.upcoming.map((item) => {
+                              const status = appointmentStatus(item.status);
+                              const meta = appointmentStatusMeta[status];
+                              const day = dateOnly(item.day);
+                              const time = appointmentClock(item);
+                              const dateTime = day && /^\d{2}:\d{2}$/.test(time) ? `${day}T${time}` : day || undefined;
+                              return (
+                                <tr key={item.id}>
+                                  <td>
+                                    <time className={styles.tableDate} dateTime={dateTime}>{formatAppointmentDay(item.day)}</time>
+                                  </td>
+                                  <td>{time}</td>
+                                  <td>{asText(item.durationMin, "30")} min</td>
+                                  <td>
+                                    <span className={reservationStyles.name}>{asText(item.firstName, "Patient")} {asText(item.lastName, "")}</span>
+                                    <br />
+                                    <span className={reservationStyles.muted}>{asText(item.email, "Coordonnées à préciser")}</span>
+                                  </td>
+                                  <td>{asText(item.care, "Soin à préciser")}</td>
+                                  <td>
+                                    <span className={reservationStyles.badge} style={{ background: meta.background, color: meta.color }}>
+                                      {meta.label}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <div className={reservationStyles.actions}>
+                                      <button className={`${reservationStyles.btn} ${reservationStyles.btnCancel}`} type="button" onClick={() => void cancelAppointment(item)} disabled={saving}>Annuler</button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+
                 <div className={styles.statsGrid}>
                   <button type="button" className={styles.statCard} onClick={() => setActiveSection("contacts")}>
                     <span>Messages</span>
                     <strong>{overviewTotals.contacts}</strong>
                     <small>{newMessages} nouveau{newMessages === 1 ? "" : "x"}</small>
                   </button>
-                  <button type="button" className={styles.statCard} onClick={() => setActiveSection("appointments")}>
-                    <span>Rendez-vous</span>
+                  <Link className={styles.statCard} href="/admin/reservations">
+                    <span>Réservations</span>
                     <strong>{overviewTotals.appointments}</strong>
                     <small>{pendingAppointments} à traiter</small>
-                  </button>
+                  </Link>
                   <button type="button" className={styles.statCard} onClick={() => setActiveSection("reviews")}>
                     <span>Avis</span>
                     <strong>{overviewTotals.reviews}</strong>
@@ -981,16 +1419,29 @@ export default function AdminPage() {
                       <p className={styles.panelEmpty}>Aucune activité pour le moment.</p>
                     ) : (
                       <div className={styles.activityList}>
-                        {recentActivity.map((activity) => (
-                          <button key={activity.id} type="button" onClick={() => setActiveSection(activity.section)}>
-                            <span className={styles.activityType}>{activity.type.slice(0, 1)}</span>
-                            <span className={styles.activityText}>
-                              <strong>{activity.title}</strong>
-                              <small>{activity.type} · {activity.detail}</small>
-                            </span>
-                            <time>{formatDate(activity.date)}</time>
-                          </button>
-                        ))}
+                        {recentActivity.map((activity) => {
+                          const content = (
+                            <>
+                              <span className={styles.activityType}>{activity.type.slice(0, 1)}</span>
+                              <span className={styles.activityText}>
+                                <strong>{activity.title}</strong>
+                                <small>{activity.type} · {activity.detail}</small>
+                              </span>
+                              <time>{formatDate(activity.date)}</time>
+                            </>
+                          );
+                          return activity.href ? (
+                            <Link key={activity.id} href={activity.href}>{content}</Link>
+                          ) : (
+                            <button
+                              key={activity.id}
+                              type="button"
+                              onClick={() => activity.section && setActiveSection(activity.section)}
+                            >
+                              {content}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </section>
@@ -1003,10 +1454,10 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <div className={styles.quickActions}>
-                      <button type="button" onClick={() => setActiveSection("appointments")}>
-                        <strong>Gérer les rendez-vous</strong>
+                      <Link href="/admin/reservations">
+                        <strong>Gérer les réservations</strong>
                         <span>Confirmer ou annuler une demande</span>
-                      </button>
+                      </Link>
                       <button type="button" onClick={() => setActiveSection("contacts")}>
                         <strong>Lire les messages</strong>
                         <span>Répondre aux demandes des patients</span>
@@ -1225,6 +1676,68 @@ export default function AdminPage() {
                 ))}
               </div>
             </div>
+          ) : activeSection === "blocked-ips" ? (
+            <div className={styles.formManager}>
+              <form className={styles.formConfigCard} onSubmit={(event) => void addBlockedIp(event)}>
+                <div className={styles.formConfigHeader}>
+                  <div>
+                    <p className={styles.eyebrow}>Sécurité des réservations</p>
+                    <h2>Bloquer une adresse IP</h2>
+                  </div>
+                </div>
+                <div className={styles.formSettingsGrid}>
+                  <label className={styles.fullField}>
+                    Adresse IPv4 ou IPv6
+                    <input
+                      required
+                      maxLength={45}
+                      value={blockedIpDraft}
+                      onChange={(event) => setBlockedIpDraft(event.target.value)}
+                      placeholder="192.0.2.10 ou 2001:db8::10"
+                      autoComplete="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                    />
+                  </label>
+                </div>
+                <div className={styles.formConfigActions}>
+                  <span className={styles.settingsHint}>Les nouvelles demandes de rendez-vous provenant de cette adresse seront refusées.</span>
+                  <button className={styles.primaryButton} type="submit" disabled={saving || !blockedIpDraft.trim()}>
+                    {saving ? "Blocage…" : "Bloquer l’adresse IP"}
+                  </button>
+                </div>
+              </form>
+
+              {loading ? (
+                <div className={styles.emptyState}>Chargement des adresses IP…</div>
+              ) : items.length === 0 ? (
+                <div className={styles.emptyState}>Aucune adresse IP bloquée.</div>
+              ) : (
+                <div className={styles.records}>
+                  {items.map((item) => {
+                    const ipAddress = asText(item.ipAddress);
+                    return (
+                      <article className={styles.record} key={item.id}>
+                        <div className={styles.recordMain}>
+                          <div className={styles.recordHeading}>
+                            <div>
+                              <h2>{ipAddress}</h2>
+                              <p>Adresse IP bloquée</p>
+                            </div>
+                            <time>{formatDate(item.createdAt)}</time>
+                          </div>
+                        </div>
+                        <div className={styles.recordActions}>
+                          <button className={styles.dangerButton} type="button" onClick={() => void unblockIp(item.id, ipAddress)} disabled={saving}>
+                            Débloquer
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           ) : loading ? (
             <div className={styles.emptyState}>Chargement des données…</div>
           ) : items.length === 0 ? (
@@ -1370,6 +1883,51 @@ export default function AdminPage() {
           )}
         </section>
       </div>
+
+      {appointmentAction && (
+        <div className={reservationStyles.overlay} onClick={(event) => { if (event.target === event.currentTarget) setAppointmentAction(null); }}>
+          <form
+            className={reservationStyles.modal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dashboard-appointment-action-title"
+            onSubmit={(event) => { event.preventDefault(); void submitAppointmentAction(); }}
+          >
+            <h2 className={reservationStyles.modalTitle} id="dashboard-appointment-action-title">
+              {appointmentAction.mode === "confirm" ? "Confirmer le rendez-vous" : "Proposer un autre créneau"}
+            </h2>
+            <p className={reservationStyles.modalSub}>
+              {asText(appointmentAction.item.firstName, "Patient")} {asText(appointmentAction.item.lastName, "")} — {asText(appointmentAction.item.care, "Soin à préciser")}
+            </p>
+            <div className={reservationStyles.grid2}>
+              <label className={reservationStyles.field}>
+                Date
+                <input className={reservationStyles.input} required type="date" value={appointmentDraft.day} onChange={(event) => setAppointmentDraft((current) => ({ ...current, day: event.target.value }))} />
+              </label>
+              <label className={reservationStyles.field}>
+                Heure
+                <input className={reservationStyles.input} required type="time" value={appointmentDraft.time} onChange={(event) => setAppointmentDraft((current) => ({ ...current, time: event.target.value }))} />
+              </label>
+            </div>
+            {appointmentAction.mode === "confirm" && (
+              <label className={reservationStyles.field}>
+                Durée (minutes)
+                <input className={reservationStyles.input} required min="5" step="5" type="number" value={appointmentDraft.duration} onChange={(event) => setAppointmentDraft((current) => ({ ...current, duration: event.target.value }))} />
+              </label>
+            )}
+            <label className={reservationStyles.field}>
+              Message au patient (optionnel)
+              <textarea className={reservationStyles.input} rows={3} value={appointmentDraft.message} onChange={(event) => setAppointmentDraft((current) => ({ ...current, message: event.target.value }))} />
+            </label>
+            <div className={reservationStyles.modalActions}>
+              <button className={reservationStyles.ghost} type="button" onClick={() => setAppointmentAction(null)}>Fermer</button>
+              <button className={reservationStyles.primary} type="submit" disabled={saving || !appointmentDraft.day || !appointmentDraft.time}>
+                {saving ? "Envoi…" : appointmentAction.mode === "confirm" ? "Confirmer + e-mail" : "Proposer + e-mail"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </main>
   );
 }
