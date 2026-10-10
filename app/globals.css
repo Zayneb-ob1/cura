@@ -3509,3 +3509,13 @@ textarea {
     padding: 40px 0 48px;
   }
 }
+
+/* Titre d'accueil plus long : il reste dans sa colonne et ne passe plus sous le logo. */
+.home-hero h1 {
+  font-size: clamp(34px, 3.3vw, 50px);
+  line-height: 1.05;
+  white-space: normal;
+  text-wrap: balance;
+  max-width: 100%;
+  padding-right: 24px;
+}
