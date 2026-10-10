@@ -8,7 +8,7 @@ import { useLanguage } from "@/components/language-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { useSiteSettings } from "@/components/site-settings-provider";
-import { ToothArt } from "@/components/tooth-art";
+import { ValueIcon } from "@/components/value-icons";
 import { treatmentsByLanguage } from "@/lib/content";
 
 type PublicReview = {
@@ -25,20 +25,27 @@ const pageCopy = {
     heroLine1: "PRENDRE SOIN DE",
     heroLine2: "TRAIT POUR TRAIT.",
     heroCopy: "Du contrôle annuel à l’implant : un seul cabinet, une seule équipe, et le temps de tout vous expliquer calmement — avant de commencer.",
-    discover: "Découvrir le cabinet",
     appointment: "Prendre rendez-vous",
     careLabel: "Nos soins",
-    careTitle: "Tout ce dont vos dents ont besoin, à une seule adresse.",
-    details: "Détails",
-    allCare: "Tous les soins en détail",
-    visitLabel: "Votre première visite",
-    visitTitle: "Quatre étapes, aucune surprise.",
-    steps: [
-      ["I", "Accueil", "Munissez-vous de votre carte d’identité. Nous créons votre dossier et passons en revue vos antécédents."],
-      ["II", "Examen", "Bilan complet des dents et des gencives, avec radiographie si nécessaire."],
-      ["III", "Plan de soins", "Vous repartez avec un plan écrit : priorités, calendrier et estimation des coûts."],
-      ["IV", "Suivi", "Nous vous rappelons votre contrôle annuel. Aucun courrier que vous n’avez pas demandé."],
+    careTitle: "Nos compétences",
+    careSubtitle: "Choisissez le soin adapté",
+    marqueeLabel: "Soins proposés au cabinet",
+    competences: [
+      ["esthetique", "Esthétique dentaire", "Nous réalisons des réhabilitations dentaires complètes."],
+      ["parodontologie", "Parodontologie", "Nous diagnostiquons et traitons tous vos problèmes de gencive."],
+      ["implantologie", "Implantologie", "Nous remplaçons votre dent manquante ou endommagée."],
+      ["endodontie", "Endodontie", "Solutions pour traiter les douleurs dentaires, les caries profondes et les dents dévitalisées."],
+      ["soins-generaux", "Soins généraux", "Soins dentaires courants pour préserver votre santé bucco-dentaire."],
+      ["chirurgie", "Chirurgie dentaire", "Vos extractions dentaires et interventions chirurgicales avec précision et confort."],
+      ["facettes", "Facettes dentaires", "Nous corrigeons divers aspects esthétiques des dents."],
+      ["orthodontie", "Orthodontie", "Nous proposons des solutions orthodontiques adaptées pour corriger l’alignement des dents et améliorer l’esthétique de votre sourire."],
     ],
+    valuesLabel: "Nos engagements",
+    valuesTitle: "Nos valeurs",
+    values: ["Le patient avant tout", "Des praticiens passionnés et compétents", "Des technologies performantes", "Le respect de la déontologie"],
+    questionTitle: "Une question ?",
+    questionCopy: "Vous souhaitez avoir plus de renseignements ou prendre un rendez-vous ?",
+    allCare: "Tous les soins en détail",
     clinicLabel: "Le cabinet",
     clinicTitle: "Un cabinet pensé pour celui qui n’aime pas le dentiste.",
     clinicLead: "Des espaces calmes, des explications claires, et des soins qui s’arrêtent dès que vous levez la main. La peur du dentiste n’est pas une faiblesse — c’est une donnée avec laquelle nous travaillons.",
@@ -50,7 +57,7 @@ const pageCopy = {
     ],
     figuresLabel: "En chiffres",
     figuresTitle: "Ce que vous pouvez attendre",
-    figures: [["—", "attente moyenne"], ["—", "soins proposés"], ["—", "jours d’ouverture"]],
+    figures: ["min d’attente en moyenne", "soins proposés", "jours d’ouverture"],
     figuresNote: "Informations pratiques à confirmer auprès du cabinet.",
     reviewsLabel: "Avis",
     reviewsTitle: "CE QU’ON DIT À PROPOS DE NOUS",
@@ -65,20 +72,27 @@ const pageCopy = {
     heroLine1: "ZORG VOOR UW GEBIT",
     heroLine2: "TOT IN ELK DETAIL.",
     heroCopy: "Van de jaarlijkse controle tot een implantaat: één praktijk, één team en de tijd om alles rustig uit te leggen — vóór we beginnen.",
-    discover: "Ontdek de praktijk",
     appointment: "Maak een afspraak",
     careLabel: "Onze behandelingen",
-    careTitle: "Alles wat uw gebit nodig heeft, op één adres.",
-    details: "Details",
-    allCare: "Alle behandelingen bekijken",
-    visitLabel: "Uw eerste bezoek",
-    visitTitle: "Vier stappen, geen verrassingen.",
-    steps: [
-      ["I", "Onthaal", "Breng uw identiteitskaart mee. We maken uw dossier aan en overlopen uw medische voorgeschiedenis."],
-      ["II", "Onderzoek", "Volledig onderzoek van tanden en tandvlees, met röntgenfoto indien nodig."],
-      ["III", "Behandelplan", "U vertrekt met een duidelijk plan: prioriteiten, timing en kostenraming."],
-      ["IV", "Opvolging", "We herinneren u aan uw jaarlijkse controle. Geen berichten waar u niet om vroeg."],
+    careTitle: "Onze expertise",
+    careSubtitle: "Kies de behandeling die bij u past",
+    marqueeLabel: "Behandelingen in de praktijk",
+    competences: [
+      ["esthetique", "Esthetische tandheelkunde", "Wij voeren volledige tandheelkundige rehabilitaties uit."],
+      ["parodontologie", "Parodontologie", "Wij sporen al uw tandvleesproblemen op en behandelen ze."],
+      ["implantologie", "Implantologie", "Wij vervangen uw ontbrekende of beschadigde tand."],
+      ["endodontie", "Endodontie", "Oplossingen voor tandpijn, diepe gaatjes en gedevitaliseerde tanden."],
+      ["soins-generaux", "Algemene tandzorg", "Dagelijkse tandzorg om uw mondgezondheid te bewaren."],
+      ["chirurgie", "Mondchirurgie", "Uw tandextracties en chirurgische ingrepen, nauwkeurig en comfortabel."],
+      ["facettes", "Facetten", "Wij corrigeren diverse esthetische aspecten van uw tanden."],
+      ["orthodontie", "Orthodontie", "Orthodontische oplossingen op maat om de stand van uw tanden te corrigeren en uw glimlach te verfraaien."],
     ],
+    valuesLabel: "Onze engagementen",
+    valuesTitle: "Onze waarden",
+    values: ["De patiënt staat voorop", "Gedreven en deskundige tandartsen", "Performante technologie", "Respect voor de deontologie"],
+    questionTitle: "Een vraag?",
+    questionCopy: "Wenst u meer informatie of wilt u een afspraak maken?",
+    allCare: "Alle behandelingen bekijken",
     clinicLabel: "De praktijk",
     clinicTitle: "Een praktijk voor wie niet graag naar de tandarts gaat.",
     clinicLead: "Rustige ruimtes, heldere uitleg en behandelingen die stoppen zodra u uw hand opsteekt. Angst voor de tandarts is geen zwakte — het is iets waarmee we rekening houden.",
@@ -90,7 +104,7 @@ const pageCopy = {
     ],
     figuresLabel: "In cijfers",
     figuresTitle: "Wat u kunt verwachten",
-    figures: [["—", "gemiddelde wachttijd"], ["—", "behandelingen"], ["—", "openingsdagen"]],
+    figures: ["min gemiddelde wachttijd", "behandelingen", "openingsdagen"],
     figuresNote: "Praktische informatie te bevestigen bij de praktijk.",
     reviewsLabel: "Beoordelingen",
     reviewsTitle: "WAT MEN OVER ONS ZEGT",
@@ -155,6 +169,9 @@ export default function HomePage() {
         quote: review.quote,
         name: review.name,
       }));
+  const openDays = clinicConfig.hours.filter((value) => value && value !== "closed").length;
+  // Only values backed by site data: the average wait time is not tracked anywhere yet.
+  const figureValues = ["—", String(homeTreatments.length), openDays > 0 ? String(openDays) : "—"];
   const heroLabel = clinicConfig.city ? `${copy.heroLabel} · ${clinicConfig.city}` : copy.heroLabel;
 
   return (
@@ -168,7 +185,6 @@ export default function HomePage() {
             <h1>{copy.heroLine1}<span>{copy.heroLine2}</span></h1>
             <p>{copy.heroCopy}</p>
             <div className="home-hero__actions">
-              <Link href="/cabinet" className="home-hero__text-link">{copy.discover}</Link>
               <ButtonLink href="/rendez-vous">{copy.appointment}</ButtonLink>
             </div>
           </div>
@@ -178,33 +194,58 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="home-services">
+      <section className="home-marquee" aria-label={copy.marqueeLabel}>
+        <ul className="sr-only">{homeTreatments.map((care) => <li key={care.number}>{care.name}</li>)}</ul>
+        <div className="home-marquee__track" aria-hidden="true">
+          {[0, 1].map((loop) => (
+            <div className="home-marquee__group" key={loop}>
+              {homeTreatments.map((care) => <span key={care.number}>{care.name}</span>)}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="home-competences">
         <div className="content-shell">
           <SectionLabel>{copy.careLabel}</SectionLabel>
           <h2>{copy.careTitle}</h2>
-          <div className="home-services__grid">
-            {homeTreatments.map((care, index) => (
-              <article className="care-card" key={care.number}>
-                <span className="care-card__number">{care.number}</span>
-                <div className="care-card__visual"><ToothArt variant={index % 3} /></div>
-                <h3>{care.name}</h3>
-                <p>{care.short}</p>
-                <Link href={`/soins#soin-${care.number}`}>{copy.details} <span>⟶</span></Link>
-              </article>
+          <p className="home-competences__subtitle">{copy.careSubtitle}</p>
+          <div className="home-competences__grid">
+            {copy.competences.map(([slug, title, text]) => (
+              <Link className="competence-card" href="/soins" key={slug}>
+                <span className="competence-card__media">
+                  <Image src={`/images/competences/${slug}.webp`} alt="" fill sizes="(max-width: 720px) 100vw, 50vw" />
+                </span>
+                <span className="competence-card__body">
+                  <h3>{title}</h3>
+                  <span>{text}</span>
+                </span>
+              </Link>
             ))}
           </div>
           <ButtonLink href="/soins">{copy.allCare}</ButtonLink>
         </div>
       </section>
 
-      <section className="home-steps">
+      <section className="home-values">
         <div className="content-shell">
-          <SectionLabel>{copy.visitLabel}</SectionLabel>
-          <h2 className="editorial-title">{copy.visitTitle}</h2>
-          <div className="home-steps__grid">
-            {copy.steps.map(([number, title, text]) => <article key={number}><span aria-hidden="true">{number}</span><h3>{title}</h3><p>{text}</p></article>)}
-          </div>
+          <SectionLabel>{copy.valuesLabel}</SectionLabel>
+          <h2>{copy.valuesTitle}</h2>
+          <ul className="home-values__grid">
+            {copy.values.map((value, index) => (
+              <li key={value}>
+                <ValueIcon index={index} />
+                <span>{value}</span>
+              </li>
+            ))}
+          </ul>
         </div>
+      </section>
+
+      <section className="home-question">
+        <h2>{copy.questionTitle}</h2>
+        <p>{copy.questionCopy}</p>
+        <ButtonLink href="/rendez-vous">{copy.appointment}</ButtonLink>
       </section>
 
       <section className="home-clinic">
@@ -219,7 +260,7 @@ export default function HomePage() {
             <Image className="home-clinic__watermark" src="/brand/cura-tooth.png" alt="" width={656} height={784} sizes="(max-width: 720px) 80vw, 40vw" quality={45} aria-hidden="true" />
             <SectionLabel>{copy.figuresLabel}</SectionLabel>
             <h3>{copy.figuresTitle}</h3>
-            <div className="home-clinic__numbers">{copy.figures.map(([number, label]) => <p key={label}><strong>{number}</strong><span>{label}</span></p>)}</div>
+            <div className="home-clinic__numbers">{copy.figures.map((label, index) => <p key={label}><strong>{figureValues[index]}</strong><span>{label}</span></p>)}</div>
             <small>{copy.figuresNote}</small>
           </aside>
         </div>

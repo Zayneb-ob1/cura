@@ -18,7 +18,9 @@ const headerCopy = {
     nav: [
       ["ACCUEIL", "/"],
       ["SOINS", "/soins"],
+      ["URGENCES", "/urgences"],
       ["CABINET", "/cabinet"],
+      ["TARIFS", "/tarifs"],
       ["NOUVEAU PATIENT", "/nouveau-patient"],
       ["CONSEILS", "/conseils"],
       ["CONTACT", "/contact"],
@@ -35,7 +37,9 @@ const headerCopy = {
     nav: [
       ["START", "/"],
       ["BEHANDELINGEN", "/soins"],
+      ["SPOED", "/urgences"],
       ["PRAKTIJK", "/cabinet"],
+      ["TARIEVEN", "/tarifs"],
       ["NIEUWE PATIËNT", "/nouveau-patient"],
       ["ADVIES", "/conseils"],
       ["CONTACT", "/contact"],
@@ -119,7 +123,7 @@ export function SiteHeader() {
         </div>
       </div>
       <div className="site-header__inner">
-        <div className="site-header__brand"><Logo nameOnly withMark homeLabel={copy.homeLabel} priority /></div>
+        <div className="site-header__brand"><Logo withMark homeLabel={copy.homeLabel} priority /></div>
         <nav className="site-nav" aria-label={copy.navigationLabel}>
           {copy.nav.map(([label, href]) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);

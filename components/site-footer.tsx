@@ -20,6 +20,8 @@ const footerCopy = {
     practiceLabel: "CABINET",
     practiceLinks: [
       ["L'équipe", "/cabinet"],
+      ["Tarifs", "/tarifs"],
+      ["Urgences", "/urgences"],
       ["Conseils", "/conseils"],
       ["Contact", "/contact"],
     ],
@@ -50,6 +52,8 @@ const footerCopy = {
     practiceLabel: "PRAKTIJK",
     practiceLinks: [
       ["Het team", "/cabinet"],
+      ["Tarieven", "/tarifs"],
+      ["Spoed", "/urgences"],
       ["Advies", "/conseils"],
       ["Contact", "/contact"],
     ],
