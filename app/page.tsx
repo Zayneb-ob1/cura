@@ -22,8 +22,8 @@ type PublicReview = {
 const pageCopy = {
   fr: {
     heroLabel: "Cabinet dentaire",
-    heroLine1: "PRENDRE SOIN DE",
-    heroLine2: "TRAIT POUR TRAIT.",
+    heroLine1: "BIENVENUE DANS LA CLINIQUE",
+    heroLine2: "DE SANTÉ DENTAIRE CURA",
     heroCopy: "Du contrôle annuel à l’implant : un seul cabinet, une seule équipe, et le temps de tout vous expliquer calmement — avant de commencer.",
     appointment: "Prendre rendez-vous",
     careLabel: "Nos soins",
@@ -69,8 +69,8 @@ const pageCopy = {
   },
   nl: {
     heroLabel: "Tandartspraktijk",
-    heroLine1: "ZORG VOOR UW GEBIT",
-    heroLine2: "TOT IN ELK DETAIL.",
+    heroLine1: "WELKOM IN DE",
+    heroLine2: "TANDHEELKUNDIGE KLINIEK CURA",
     heroCopy: "Van de jaarlijkse controle tot een implantaat: één praktijk, één team en de tijd om alles rustig uit te leggen — vóór we beginnen.",
     appointment: "Maak een afspraak",
     careLabel: "Onze behandelingen",
