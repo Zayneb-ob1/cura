@@ -3255,6 +3255,7 @@ textarea {
 .competence-card {
   position: relative;
   aspect-ratio: 426 / 151;
+  min-width: 0;
   min-height: 150px;
   overflow: hidden;
   display: flex;
@@ -3518,4 +3519,216 @@ textarea {
   text-wrap: balance;
   max-width: 100%;
   padding-right: 24px;
+}
+
+/* ---- Responsive : menu burger (tablette + mobile) ---- */
+.site-header__menu-toggle {
+  display: none;
+}
+
+@media (max-width: 1120px) {
+  .site-header {
+    height: auto;
+  }
+
+  .site-header__inner {
+    position: static;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .site-header__brand {
+    margin-right: auto;
+  }
+
+  .site-header__menu-toggle {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    order: 2;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid #4a4a46;
+    border-radius: 4px;
+    background: none;
+    color: #f1efeb;
+    cursor: pointer;
+  }
+
+  .site-header__menu-toggle span,
+  .site-header__menu-toggle span::before,
+  .site-header__menu-toggle span::after {
+    position: absolute;
+    width: 20px;
+    height: 2px;
+    border-radius: 1px;
+    background: currentColor;
+    transition: transform 200ms ease, opacity 200ms ease;
+  }
+
+  .site-header__menu-toggle span::before,
+  .site-header__menu-toggle span::after {
+    left: 0;
+    content: "";
+  }
+
+  .site-header__menu-toggle span::before {
+    transform: translateY(-6px);
+  }
+
+  .site-header__menu-toggle span::after {
+    transform: translateY(6px);
+  }
+
+  .site-header--menu-open .site-header__menu-toggle span {
+    background: transparent;
+  }
+
+  .site-header--menu-open .site-header__menu-toggle span::before {
+    background: #f1efeb;
+    transform: rotate(45deg);
+  }
+
+  .site-header--menu-open .site-header__menu-toggle span::after {
+    background: #f1efeb;
+    transform: rotate(-45deg);
+  }
+
+  .site-header .site-nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: auto;
+    max-height: calc(100dvh - 100%);
+    padding: 8px 24px 20px;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    overflow-y: auto;
+    background: var(--charcoal, #292a29);
+    border-top: 1px solid #3a3a37;
+    box-shadow: 0 18px 30px rgb(0 0 0 / 0.35);
+  }
+
+  .site-header--menu-open .site-nav {
+    display: flex;
+  }
+
+  .site-header .site-nav a {
+    height: auto;
+    min-height: 52px;
+    border-bottom: 1px solid #3a3a37;
+    font-size: 14px;
+    letter-spacing: 0.06em;
+  }
+
+  .site-header .site-nav a:last-child {
+    border-bottom: 0;
+  }
+
+  .site-header .site-nav a::after {
+    display: none;
+  }
+
+  .site-header .site-nav a.site-nav__link--active {
+    color: var(--gold);
+  }
+
+  .site-header__appointment {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 540px) {
+  .site-header__inner {
+    gap: 10px;
+  }
+
+  .site-header__appointment {
+    min-width: 0;
+    padding-inline: 12px;
+    font-size: 10px;
+  }
+
+  .site-header .logo__name {
+    font-size: 28px;
+  }
+
+  .site-header .logo__mark {
+    width: 30px;
+    height: 36px;
+  }
+}
+
+@media (max-width: 340px) {
+  .site-header__appointment {
+    display: none;
+  }
+}
+
+/* ---- Responsive : lisibilité de l'accueil sur mobile ---- */
+@media (max-width: 720px) {
+  .home-page .section-label {
+    font-size: 11px;
+  }
+
+  .home-competences {
+    padding: 44px 0 52px;
+  }
+
+  .home-competences > .content-shell,
+  .home-values > .content-shell {
+    width: min(calc(100% - 40px), 1280px);
+  }
+
+  .home-competences__subtitle,
+  .competence-card__body > span {
+    font-size: 14px;
+  }
+
+  .home-competences__grid {
+    margin-top: 32px;
+    gap: 14px;
+  }
+
+  .home-competences > .content-shell > .button-link {
+    margin-top: 40px;
+  }
+
+  .home-values__grid li > span {
+    font-size: 13px;
+  }
+
+  .home-question p,
+  .home-cta p {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .home-question .button-link,
+  .home-cta .button-link,
+  .home-competences > .content-shell > .button-link {
+    min-height: 48px;
+    font-size: 12px;
+  }
+
+  .home-clinic__numbers span {
+    font-size: 11px;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1120px) {
+  .competence-card {
+    min-height: 170px;
+  }
+
+  .home-values__grid li > span {
+    font-size: 12px;
+  }
 }

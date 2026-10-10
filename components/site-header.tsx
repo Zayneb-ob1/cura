@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/logo";
@@ -14,6 +15,8 @@ const headerCopy = {
     languageLabel: "Langue",
     navigationLabel: "Navigation principale",
     homeLabel: "Accueil",
+    menuOpen: "Ouvrir le menu",
+    menuClose: "Fermer le menu",
     appointment: "PRENDRE RENDEZ-VOUS",
     nav: [
       ["ACCUEIL", "/"],
@@ -33,6 +36,8 @@ const headerCopy = {
     languageLabel: "Taal",
     navigationLabel: "Hoofdnavigatie",
     homeLabel: "Startpagina",
+    menuOpen: "Menu openen",
+    menuClose: "Menu sluiten",
     appointment: "MAAK EEN AFSPRAAK",
     nav: [
       ["START", "/"],
@@ -54,6 +59,8 @@ const headerCopy = {
     languageLabel: string;
     navigationLabel: string;
     homeLabel: string;
+    menuOpen: string;
+    menuClose: string;
     appointment: string;
     nav: readonly (readonly [string, string])[];
   }
@@ -75,9 +82,17 @@ export function SiteHeader() {
   const { language, setLanguage } = useLanguage();
   const clinicConfig = useSiteSettings();
   const copy = headerCopy[language];
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && setMenuOpen(false);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
 
   return (
-    <header className="site-header">
+    <header className={menuOpen ? "site-header site-header--menu-open" : "site-header"}>
       <div className="site-header__utility">
         <div className="site-header__utility-inner">
           <div className="utility-details">
@@ -124,11 +139,21 @@ export function SiteHeader() {
       </div>
       <div className="site-header__inner">
         <div className="site-header__brand"><Logo withMark homeLabel={copy.homeLabel} priority /></div>
-        <nav className="site-nav" aria-label={copy.navigationLabel}>
+        <button
+          type="button"
+          className="site-header__menu-toggle"
+          aria-expanded={menuOpen}
+          aria-controls="site-nav"
+          aria-label={menuOpen ? copy.menuClose : copy.menuOpen}
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <span aria-hidden="true" />
+        </button>
+        <nav className="site-nav" id="site-nav" aria-label={copy.navigationLabel}>
           {copy.nav.map(([label, href]) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
-              <Link key={href} href={href} className={active ? "site-nav__link--active" : undefined} aria-current={active ? "page" : undefined}>
+              <Link key={href} href={href} className={active ? "site-nav__link--active" : undefined} aria-current={active ? "page" : undefined} onClick={() => setMenuOpen(false)}>
                 {label}
               </Link>
             );
