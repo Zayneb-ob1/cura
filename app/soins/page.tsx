@@ -71,15 +71,11 @@ export default function SoinsPage() {
   const { language } = useLanguage();
   const copy = pageCopy[language];
 
-  // Open acts are state so a re-render never collapses them; the last one starts open as in the design.
   const listRef = useRef<HTMLDivElement>(null);
-  const [openActs, setOpenActs] = useState<ReadonlySet<string>>(() => new Set(["orthodontie"]));
-  const setActOpen = (slug: string, open: boolean) => setOpenActs((current) => {
-    if (current.has(slug) === open) return current;
-    const next = new Set(current);
-    if (open) next.add(slug); else next.delete(slug);
-    return next;
-  });
+  // Only one act open at a time: opening one closes the others.
+  const [openAct, setOpenAct] = useState<string | null>("orthodontie");
+  const setActOpen = (slug: string, open: boolean) =>
+    setOpenAct((current) => (open ? slug : current === slug ? null : current));
 
   // Footer links point to /soins#<slug>: open that act when arriving or when the hash changes.
   useEffect(() => {
@@ -121,7 +117,7 @@ export default function SoinsPage() {
             </div>
             <div className="care-acts__list" ref={listRef}>
               {copy.acts.map(([slug, name, text]) => (
-                <details className="care-act" id={slug} key={slug} open={openActs.has(slug)} onToggle={(event) => setActOpen(slug, event.currentTarget.open)}>
+                <details className="care-act" id={slug} key={slug} open={openAct === slug} onToggle={(event) => setActOpen(slug, event.currentTarget.open)}>
                   <summary>{name}<span aria-hidden="true" /></summary>
                   <div className="care-act__body">
                     <p>{text}</p>
