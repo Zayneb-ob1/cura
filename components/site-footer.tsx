@@ -9,14 +9,7 @@ import { formatClinicHour } from "@/lib/site-config";
 const footerCopy = {
   fr: {
     careLabel: "SOINS",
-    careLinks: [
-      "Contrôle annuel",
-      "Plombage",
-      "Détartrage & surfaçage",
-      "Traitement de canal",
-      "Extraction",
-      "Prothèse dentaire",
-    ],
+    careLinks: [["Parodontologie", "parodontologie"], ["Esthétique dentaire", "esthetique"], ["Implantologie", "implantologie"], ["Soins généraux", "soins-generaux"], ["Facettes dentaires", "facettes"], ["Chirurgie dentaire", "chirurgie"], ["Endodontie", "endodontie"], ["Orthodontie", "orthodontie"]],
     practiceLabel: "CABINET",
     practiceLinks: [
       ["L'équipe", "/cabinet"],
@@ -41,14 +34,7 @@ const footerCopy = {
   },
   nl: {
     careLabel: "BEHANDELINGEN",
-    careLinks: [
-      "Jaarlijkse controle",
-      "Vulling",
-      "Tandsteenverwijdering & dieptereiniging",
-      "Wortelkanaalbehandeling",
-      "Extractie",
-      "Tandprothese",
-    ],
+    careLinks: [["Parodontologie", "parodontologie"], ["Esthetische tandheelkunde", "esthetique"], ["Implantologie", "implantologie"], ["Algemene tandzorg", "soins-generaux"], ["Facetten", "facettes"], ["Mondchirurgie", "chirurgie"], ["Endodontie", "endodontie"], ["Orthodontie", "orthodontie"]],
     practiceLabel: "PRAKTIJK",
     practiceLinks: [
       ["Het team", "/cabinet"],
@@ -75,7 +61,7 @@ const footerCopy = {
   Language,
   {
     careLabel: string;
-    careLinks: readonly string[];
+    careLinks: readonly (readonly [string, string])[];
     practiceLabel: string;
     practiceLinks: readonly (readonly [string, string])[];
     patientsLabel: string;
@@ -109,8 +95,8 @@ export function SiteFooter() {
         </div>
         <div role="navigation" aria-label={copy.careLabel}>
           <p className="footer-label">{copy.careLabel}</p>
-          {copy.careLinks.map((care, index) => (
-            <Link key={care} href={`/soins#soin-${String(index + 1).padStart(2, "0")}`}>
+          {copy.careLinks.map(([care, slug]) => (
+            <Link key={slug} href={`/soins#${slug}`}>
               {care}
             </Link>
           ))}

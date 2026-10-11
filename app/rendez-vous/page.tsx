@@ -3,13 +3,27 @@
 import { FormEvent, useEffect, useState } from "react";
 import { SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
+import { PageCta, PageHero } from "@/components/page-hero";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { useSiteSettings } from "@/components/site-settings-provider";
-import { hoursByLanguage, treatmentsByLanguage } from "@/lib/content";
+import { treatmentsByLanguage } from "@/lib/content";
 
 const pageCopy = {
   fr: {
+    heroLine1: "PRENDRE RENDEZ-VOUS CHEZ", heroLine2: "CURA",
+    heroCopy: "Bénéficiez de soins dentaires personnalisés et d’une qualité supérieure, adaptés à vos besoins.",
+    introTitle: "Prendre rendez-vous chez Cura",
+    introText: ["Parce que chaque patient est différent, il est important de déterminer avec justesse votre besoin et d’adapter nos soins.", "Si vous souhaitez obtenir un devis, vous devez d’abord vous rendre au cabinet pour que nous évaluions ensemble l’intervention nécessaire.", "Pour cela, contactez-nous par e-mail, par téléphone, ou remplissez le formulaire ci-dessous pour convenir d’un rendez-vous.", "Nous avons hâte d’échanger avec vous."],
+    callClinic: "Appeler la clinique", sendMail: "Envoyer un e-mail", bookOnline: "Réserver en ligne", bookNow: "Réservez maintenant",
+    reasonsTitle: "Pour quelles raisons prendre rendez-vous ?",
+    reasonsIntro: "Chez Cura, nous proposons une prise en charge personnalisée pour préserver votre santé bucco-dentaire et sublimer votre sourire.",
+    reasons: ["Soins dentaires courants : consultations, détartrage, extractions et endodontie.", "Esthétique du sourire : blanchiment et facettes dentaires.", "Orthodontie et prothèses : appareils, gouttières et couronnes.", "Implantologie : implants dentaires et soins gingivaux.", "Bilans spécialisés : bilans parodontaux et orthodontiques.", "Suivi et deuxième avis : évaluation et conseils personnalisés."],
+    alsoTitle: "Vous pouvez également prendre rendez-vous pour",
+    also: ["Traumatisme dentaire", "Douleur et rage de dents", "Hémorragie dentaire"],
+    alsoCopy: "Nous mettons tout en œuvre pour vous recevoir dans la journée et procéder aux premiers soins indispensables pour soulager la douleur et préserver votre capital dentaire.",
+    urgent: "Voir la page urgences",
+    ctaTitle: <>Pour une évaluation personnalisée<br />et un devis sur-mesure</>, ctaCopy: "Réservez en ligne en deux minutes. Vous recevez une confirmation sous 24 h.", ctaButton: "Prendre rendez-vous",
     label: "Prendre rendez-vous", title: "Réservez votre place en deux minutes.", intro: "Choisissez le motif, donnez-nous vos coordonnées et indiquez vos disponibilités. Nous confirmons sous 24 h.",
     appointment: "Le rendez-vous", care: "Soin demandé", unknown: "Je ne sais pas encore", day: "Jour préféré", time: "Moment", morning: "Matin", afternoon: "Après-midi", any: "Sans préférence",
     details: "Vos coordonnées", firstName: "Prénom", lastName: "Nom", email: "E-mail", phone: "Téléphone", note: "Une information utile", placeholder: "Douleur, appréhension, mobilité réduite…",
@@ -17,6 +31,19 @@ const pageCopy = {
     confirmation: "Confirmation", next: "Ce qui se passe ensuite", nextCopy: "Nous vous rappelons ou vous écrivons sous 24 h pour confirmer l’heure exacte.", address: "Adresse", addressPending: "Coordonnées à confirmer", hours: "Horaires",
   },
   nl: {
+    heroLine1: "EEN AFSPRAAK MAKEN BIJ", heroLine2: "CURA",
+    heroCopy: "Geniet van persoonlijke tandzorg van hoge kwaliteit, afgestemd op uw noden.",
+    introTitle: "Een afspraak maken bij Cura",
+    introText: ["Omdat elke patiënt anders is, is het belangrijk om uw noden juist in te schatten en onze zorg daarop af te stemmen.", "Wenst u een offerte? Kom dan eerst langs in de praktijk, zodat we samen de nodige behandeling kunnen bepalen.", "Contacteer ons daarvoor per e-mail of telefoon, of vul het formulier hieronder in om een afspraak te maken.", "We kijken ernaar uit u te ontmoeten."],
+    callClinic: "De kliniek bellen", sendMail: "Een e-mail sturen", bookOnline: "Online reserveren", bookNow: "Reserveer nu",
+    reasonsTitle: "Waarvoor kunt u een afspraak maken?",
+    reasonsIntro: "Bij Cura bieden we persoonlijke zorg om uw mondgezondheid te bewaren en uw glimlach te verfraaien.",
+    reasons: ["Dagelijkse tandzorg: consultaties, tandsteenverwijdering, extracties en endodontie.", "Esthetiek van de glimlach: bleken en facetten.", "Orthodontie en prothesen: beugels, aligners en kronen.", "Implantologie: tandimplantaten en tandvleeszorg.", "Gespecialiseerde onderzoeken: parodontale en orthodontische bilans.", "Opvolging en tweede advies: beoordeling en persoonlijk advies."],
+    alsoTitle: "U kunt ook een afspraak maken voor",
+    also: ["Tandtrauma", "Pijn en hevige tandpijn", "Bloeding in de mond"],
+    alsoCopy: "We doen er alles aan om u dezelfde dag te ontvangen en de eerste zorg te geven om de pijn te verlichten en uw tanden te bewaren.",
+    urgent: "Naar de spoedpagina",
+    ctaTitle: <>Voor een persoonlijke beoordeling<br />en een offerte op maat</>, ctaCopy: "Boek online in twee minuten. U ontvangt binnen 24 uur een bevestiging.", ctaButton: "Maak een afspraak",
     label: "Maak een afspraak", title: "Reserveer uw afspraak in twee minuten.", intro: "Kies de reden, vul uw gegevens in en geef aan wanneer u beschikbaar bent. We bevestigen binnen 24 uur.",
     appointment: "De afspraak", care: "Gewenste behandeling", unknown: "Ik weet het nog niet", day: "Voorkeursdag", time: "Moment", morning: "Voormiddag", afternoon: "Namiddag", any: "Geen voorkeur",
     details: "Uw gegevens", firstName: "Voornaam", lastName: "Naam", email: "E-mail", phone: "Telefoon", note: "Nuttige informatie", placeholder: "Pijn, bezorgdheid, beperkte mobiliteit…",
@@ -94,7 +121,6 @@ export default function AppointmentPage() {
   const { language } = useLanguage();
   const clinicConfig = useSiteSettings();
   const copy = pageCopy[language];
-  const hours = hoursByLanguage[language];
   const treatments = treatmentsByLanguage[language];
   const [care, setCare] = useState("");
   const [submissionState, setSubmissionState] = useState<"idle" | "sending" | "success" | "error">("idle");
@@ -197,13 +223,30 @@ export default function AppointmentPage() {
   }
 
   return (
-    <div className="appointment-page page-paper">
+    <div className="appointment-page">
       <SiteHeader />
       <main>
-      <section className="content-shell appointment-page__intro" id="main-content" tabIndex={-1}>
-        <SectionLabel>{copy.label}</SectionLabel><h1 className="editorial-title">{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || copy.title}</h1><p>{configuredDescription || copy.intro}</p>
+      <PageHero title={copy.heroLine1} accent={copy.heroLine2} text={copy.heroCopy} visual="none" />
+
+      <section className="booking-intro">
+        <div className="content-shell split-intro">
+          <div>
+            <SectionLabel>{copy.label}</SectionLabel>
+            <h2>{copy.introTitle}</h2>
+            <div className="booking-intro__actions">
+              {clinicConfig.hasPhone && <a className="button-link button-link--green" href={`tel:${clinicConfig.phone}`}>{copy.callClinic}</a>}
+              {clinicConfig.email && <a className="button-link button-link--green" href={`mailto:${clinicConfig.email}`}>{copy.sendMail}</a>}
+              <a className="button-link button-link--green" href="#reserver">{copy.bookOnline}</a>
+            </div>
+          </div>
+          <div className="booking-intro__text">
+            {(configuredDescription ? [configuredDescription] : copy.introText).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+          </div>
+        </div>
       </section>
-      <section className="content-shell appointment-layout">
+
+      <section className="content-shell appointment-layout" id="reserver">
+        <h2 className="appointment-layout__title">{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || copy.bookNow}</h2>
         <form className="appointment-form" onSubmit={submitAppointment} aria-busy={submissionState === "sending"}>
           <div className="appointment-form__section">
             <span aria-hidden="true">01</span>
@@ -241,18 +284,22 @@ export default function AppointmentPage() {
           <button type="submit" className="button-link button-link--green" disabled={submissionState === "sending" || formConfig?.enabled === false}>{submissionState === "sending" ? copy.sending : configuredSubmitLabel || copy.send}</button>
           {submissionState !== "idle" && <p className="form-status" role="status" aria-live="polite">{copy[submissionState]}</p>}
         </form>
-        <aside className="appointment-summary">
-          <article><SectionLabel>{copy.confirmation}</SectionLabel><h2>{copy.next}</h2><p>{copy.nextCopy}</p></article>
-          <article>
-            <SectionLabel>{copy.address}</SectionLabel>
-            <p>
-              {clinicConfig.hasAddress ? <>{clinicConfig.addressLine1}<br />{clinicConfig.postalCity}</> : copy.addressPending}
-              {clinicConfig.hasPhone && <><br /><a href={`tel:${clinicConfig.phone}`}>{clinicConfig.phoneDisplay}</a></>}
-            </p>
-          </article>
-          <article><SectionLabel>{copy.hours}</SectionLabel>{hours.slice(0, 6).map(([day, time]) => <p key={day}><span>{day}</span><b>{time}</b></p>)}</article>
-        </aside>
       </section>
+
+      <section className="info-rows info-rows--paper">
+        <div className="content-shell">
+          <article className="info-row">
+            <h2>{copy.reasonsTitle}</h2>
+            <div><p>{copy.reasonsIntro}</p><ul>{copy.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></div>
+          </article>
+          <article className="info-row">
+            <h2>{copy.alsoTitle}</h2>
+            <div><ul>{copy.also.map((item) => <li key={item}>{item}</li>)}</ul><p>{copy.alsoCopy}</p><a className="info-row__link" href="/urgences">{copy.urgent} →</a></div>
+          </article>
+        </div>
+      </section>
+
+      <PageCta title={copy.ctaTitle} text={copy.ctaCopy} action={{ href: "#reserver", label: copy.ctaButton }} />
       </main>
       <SiteFooter />
     </div>

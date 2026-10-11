@@ -3,6 +3,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import { SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
+import { PageCta, PageHero } from "@/components/page-hero";
+import { ReviewsSection } from "@/components/reviews-section";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { useSiteSettings } from "@/components/site-settings-provider";
@@ -11,6 +13,15 @@ import { formatClinicHour } from "@/lib/site-config";
 const pageCopy = {
   fr: {
     contact: "Contact", title: "Où nous trouver.",
+    heroLine1: "CLINIQUE DENTAIRE CURA", heroIn: "À", heroLine2: "CONTACTEZ-NOUS…",
+    heroCopy: "Vous souhaitez recevoir des informations complémentaires ou nous poser des questions ? N’hésitez pas à nous contacter.",
+    appointment: "Prendre rendez-vous", teamLabel: "La clinique", teamTitle: "Une équipe à votre écoute !",
+    teamCopy: "Vous souhaitez avoir plus de renseignements ou prendre un rendez-vous ? Posez votre question à l’équipe de Cura, n’hésitez pas à nous contacter.",
+    addressCard: "Adresse du cabinet", contactCard: "Nous contacter", practicalCard: "Infos pratiques",
+    call: "Téléphonez-nous", writeUs: "Écrivez-nous", hoursPending: "Horaires à confirmer", practicalCopy: "Avec ou sans rendez-vous préalable : appelez-nous pour connaître les disponibilités.",
+    formTitle: "Formulaire de contact",
+    reviewsLabel: "Avis", reviewsTitle: "CE QU’ON DIT À PROPOS DE NOUS", noReviews: "Aucun avis vérifié n’est publié pour le moment.", loadingReviews: "Chargement des avis…", reviewsError: "Les avis ne peuvent pas être chargés pour le moment.",
+    ctaTitle: "Nous sommes prêts quand vous l’êtes.", ctaCopy: "Réservez en ligne en deux minutes. Vous recevez une confirmation sous 24 h.",
     address: "Adresse", directions: "Ouvrir l’itinéraire", hours: "Horaires",
     name: "Nom", email: "E-mail", subject: "Sujet", message: "Message",
     subjects: { general: "Question générale", file: "Dossier", transfer: "Transfert de dossier" },
@@ -27,6 +38,15 @@ const pageCopy = {
   },
   nl: {
     contact: "Contact", title: "Waar u ons vindt.",
+    heroLine1: "TANDHEELKUNDIGE KLINIEK CURA", heroIn: "IN", heroLine2: "NEEM CONTACT OP…",
+    heroCopy: "Wenst u meer informatie of heeft u een vraag? Aarzel niet om ons te contacteren.",
+    appointment: "Maak een afspraak", teamLabel: "De kliniek", teamTitle: "Een team dat naar u luistert!",
+    teamCopy: "Wenst u meer informatie of wilt u een afspraak maken? Stel uw vraag aan het Cura-team, wij helpen u graag verder.",
+    addressCard: "Adres van de praktijk", contactCard: "Contacteer ons", practicalCard: "Praktische info",
+    call: "Bel ons", writeUs: "Schrijf ons", hoursPending: "Openingsuren te bevestigen", practicalCopy: "Met of zonder afspraak: bel ons om de beschikbaarheden te kennen.",
+    formTitle: "Contactformulier",
+    reviewsLabel: "Beoordelingen", reviewsTitle: "WAT MEN OVER ONS ZEGT", noReviews: "Er zijn momenteel geen geverifieerde beoordelingen gepubliceerd.", loadingReviews: "Beoordelingen laden…", reviewsError: "De beoordelingen kunnen momenteel niet worden geladen.",
+    ctaTitle: "Wij staan klaar wanneer u dat bent.", ctaCopy: "Boek online in twee minuten. U ontvangt binnen 24 uur een bevestiging.",
     address: "Adres", directions: "Route openen", hours: "Openingsuren",
     name: "Naam", email: "E-mail", subject: "Onderwerp", message: "Bericht",
     subjects: { general: "Algemene vraag", file: "Dossier", transfer: "Dossieroverdracht" },
@@ -187,30 +207,55 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="contact-page page-paper">
+    <div className="contact-page">
       <SiteHeader />
       <main>
-      <section className="content-shell contact-page__intro" id="main-content" tabIndex={-1}>
-        <SectionLabel>{copy.contact}</SectionLabel>
-        <h1 className="editorial-title">{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || copy.title}</h1>
-      </section>
-      <section className="content-shell contact-layout">
-        <div className="contact-cards">
-          <article>
-            <SectionLabel>{copy.address}</SectionLabel>
-            <h2>{clinicConfig.hasAddress ? <>{clinicConfig.addressLine1}<br />{clinicConfig.postalCity}</> : copy.addressPending}</h2>
-            <dl className="contact-details">
-              <div><dt>{copy.phoneLabel}</dt><dd>{clinicConfig.hasPhone ? <a href={`tel:${clinicConfig.phone}`}>{clinicConfig.phoneDisplay}</a> : copy.contactPending}</dd></div>
-              <div><dt>{copy.emailLabel}</dt><dd>{clinicConfig.email ? <a href={`mailto:${clinicConfig.email}`}>{clinicConfig.email}</a> : copy.contactPending}</dd></div>
-              <div><dt>{copy.urgencyLabel}</dt><dd>{clinicConfig.hasPhone && clinicConfig.emergency[language] ? <a href={`tel:${clinicConfig.phone}`}>{clinicConfig.emergency[language]}</a> : copy.contactPending}</dd></div>
-            </dl>
-            {clinicConfig.mapUrl && <a className="contact-directions" href={clinicConfig.mapUrl} target="_blank" rel="noreferrer">{copy.directions}<span aria-hidden="true">→</span></a>}
-          </article>
-          <article>
-            <SectionLabel>{copy.hours}</SectionLabel>
-            {hours.map(([day, time]) => <p key={day}><span>{day}</span><b>{time}</b></p>)}
-          </article>
+      <PageHero
+        title={clinicConfig.city ? `${copy.heroLine1} ${copy.heroIn} ${clinicConfig.city.toUpperCase()}` : copy.heroLine1}
+        accent={copy.heroLine2}
+        text={copy.heroCopy}
+        action={{ href: "/rendez-vous", label: copy.appointment }}
+      />
+
+      <section className="contact-team">
+        <div className="content-shell">
+          <div className="split-intro">
+            <div>
+              <SectionLabel>{copy.teamLabel}</SectionLabel>
+              <h2>{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || copy.teamTitle}</h2>
+            </div>
+            <p>{copy.teamCopy}</p>
+          </div>
+          <div className="info-cards">
+            <article>
+              <h3>{copy.addressCard}</h3>
+              <p>{clinicConfig.hasAddress ? <>{clinicConfig.addressLine1}<br />{clinicConfig.postalCity}</> : copy.addressPending}</p>
+              {clinicConfig.mapUrl && <a className="info-cards__button" href={clinicConfig.mapUrl} target="_blank" rel="noreferrer">{copy.directions}</a>}
+            </article>
+            <article>
+              <h3>{copy.contactCard}</h3>
+              <p>
+                {clinicConfig.hasPhone ? <a href={`tel:${clinicConfig.phone}`}>{clinicConfig.phoneDisplay}</a> : `${copy.phoneLabel} : ${copy.contactPending}`}
+                <br />
+                {clinicConfig.email ? <a href={`mailto:${clinicConfig.email}`}>{clinicConfig.email}</a> : `${copy.emailLabel} : ${copy.contactPending}`}
+              </p>
+              {clinicConfig.hasPhone ? <a className="info-cards__button" href={`tel:${clinicConfig.phone}`}>{copy.call}</a> : <a className="info-cards__button" href="#contact-form">{copy.writeUs}</a>}
+            </article>
+            <article>
+              <h3>{copy.practicalCard}</h3>
+              <dl className="info-cards__hours">
+                {clinicConfig.hours.some(Boolean) && hours.map(([day, time]) => <div key={day}><dt>{day}</dt><dd>{time}</dd></div>)}
+              </dl>
+              {!clinicConfig.hours.some(Boolean) && <p>{copy.hoursPending}</p>}
+              <p>{copy.practicalCopy}</p>
+              <a className="info-cards__button" href="/rendez-vous">{copy.appointment}</a>
+            </article>
+          </div>
         </div>
+      </section>
+
+      <section className="content-shell contact-layout contact-layout--form" id="contact-form">
+        <h2 className="contact-layout__title">{copy.formTitle}</h2>
         <div className="contact-right">
           <form className="contact-form" onSubmit={submitContact} aria-busy={submissionState === "sending"}>
             <div className="contact-form__grid">
@@ -249,6 +294,9 @@ export default function ContactPage() {
           </section>
         </div>
       </section>
+
+      <ReviewsSection label={copy.reviewsLabel} title={copy.reviewsTitle} messages={copy} />
+      <PageCta title={copy.ctaTitle} text={copy.ctaCopy} action={{ href: "/rendez-vous", label: copy.appointment }} />
       </main>
       <SiteFooter />
     </div>
