@@ -3526,7 +3526,7 @@ textarea {
   display: none;
 }
 
-@media (max-width: 1120px) {
+@media (max-width: 1024px) {
   .site-header {
     height: auto;
   }
@@ -4265,4 +4265,52 @@ textarea {
 .appointment-page .home-cta p {
   font-size: 13px;
   line-height: 1.5;
+}
+
+/* ---- En-tête conforme à la maquette : 4 liens, horaires centrés ---- */
+.site-header__utility-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.site-header__utility-inner .utility-details {
+  grid-column: 2;
+  justify-content: center;
+  gap: 32px;
+}
+
+.site-header__utility-inner .utility-details__urgent {
+  display: none;
+}
+
+.site-header__utility-inner .utility-languages {
+  grid-column: 3;
+  justify-self: end;
+}
+
+@media (min-width: 1025px) {
+  .site-header .site-nav {
+    gap: clamp(20px, 2.6vw, 40px);
+  }
+
+  .site-header .site-nav a {
+    font-size: 11px;
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 1024px) {
+  .site-header__utility-inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .site-header__utility-inner .utility-details {
+    grid-column: 1;
+    justify-content: flex-start;
+  }
+
+  .site-header__utility-inner .utility-languages {
+    grid-column: 2;
+  }
 }
