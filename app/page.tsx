@@ -16,7 +16,8 @@ const pageCopy = {
     heroLabel: "Cabinet dentaire",
     heroLine1: "BIENVENUE DANS LA CLINIQUE",
     heroLine2: "DE SANTÉ DENTAIRE CURA",
-    heroCopy: "Des soins dentaires répondant aux normes internationales de la qualité, au service de nos patients. Votre santé est notre priorité, votre sourire est notre passion !",
+    heroCopy: "Du contrôle annuel à l’implant : un seul cabinet, une seule équipe, et le temps de tout vous expliquer calmement — avant de commencer.",
+    heroNote: "À noter : les chirurgiens-dentistes de Clinic Cura ne sont pas conventionnés.",
     appointment: "Prendre rendez-vous",
     careLabel: "Nos soins",
     careTitle: "Nos compétences",
@@ -50,7 +51,8 @@ const pageCopy = {
     heroLabel: "Tandartspraktijk",
     heroLine1: "WELKOM IN DE",
     heroLine2: "TANDHEELKUNDIGE KLINIEK CURA",
-    heroCopy: "Tandzorg volgens de internationale kwaliteitsnormen, ten dienste van onze patiënten. Uw gezondheid is onze prioriteit, uw glimlach is onze passie!",
+    heroCopy: "Van de jaarlijkse controle tot een implantaat: één praktijk, één team en de tijd om alles rustig uit te leggen — vóór we beginnen.",
+    heroNote: "Let op: de tandartsen van Clinic Cura zijn niet geconventioneerd.",
     appointment: "Maak een afspraak",
     careLabel: "Onze behandelingen",
     careTitle: "Onze expertise",
@@ -98,6 +100,7 @@ export default function HomePage() {
             <SectionLabel>{heroLabel}</SectionLabel>
             <h1>{copy.heroLine1}<span>{copy.heroLine2}</span></h1>
             <p>{copy.heroCopy}</p>
+            <p className="home-hero__note">{copy.heroNote}</p>
             <div className="home-hero__actions">
               <ButtonLink href="/rendez-vous">{copy.appointment}</ButtonLink>
             </div>

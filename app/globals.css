@@ -4402,3 +4402,10 @@ textarea {
 .home-values__grid li > span {
   font-weight: 700;
 }
+
+.home-hero__content > p.home-hero__note {
+  margin-top: 12px;
+  color: #d8d8d4;
+  font-style: italic;
+  font-weight: 300;
+}
