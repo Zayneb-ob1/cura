@@ -39,19 +39,6 @@ const pageCopy = {
     questionTitle: "Une question ?",
     questionCopy: "Vous souhaitez avoir plus de renseignements ou prendre un rendez-vous ?",
     allCare: "Tous les soins en détail",
-    clinicLabel: "Le cabinet",
-    clinicTitle: "Un cabinet pensé pour celui qui n’aime pas le dentiste.",
-    clinicLead: "Des espaces calmes, des explications claires, et des soins qui s’arrêtent dès que vous levez la main. La peur du dentiste n’est pas une faiblesse — c’est une donnée avec laquelle nous travaillons.",
-    clinicPoints: [
-      "Radiographie numérique — jusqu’à 80 % de rayonnement en moins",
-      "Stérilisation aux normes, visible par tous",
-      "Devis avant tout soin dépassant 150 €",
-      "Agenda enfants séparé, hors heures de pointe",
-    ],
-    figuresLabel: "En chiffres",
-    figuresTitle: "Ce que vous pouvez attendre",
-    figures: ["min d’attente en moyenne", "soins proposés", "jours d’ouverture"],
-    figuresNote: "Informations pratiques à confirmer auprès du cabinet.",
     reviewsLabel: "Avis",
     reviewsTitle: "CE QU’ON DIT À PROPOS DE NOUS",
     noReviews: "Aucun avis vérifié n’est publié pour le moment.",
@@ -86,19 +73,6 @@ const pageCopy = {
     questionTitle: "Een vraag?",
     questionCopy: "Wenst u meer informatie of wilt u een afspraak maken?",
     allCare: "Alle behandelingen bekijken",
-    clinicLabel: "De praktijk",
-    clinicTitle: "Een praktijk voor wie niet graag naar de tandarts gaat.",
-    clinicLead: "Rustige ruimtes, heldere uitleg en behandelingen die stoppen zodra u uw hand opsteekt. Angst voor de tandarts is geen zwakte — het is iets waarmee we rekening houden.",
-    clinicPoints: [
-      "Digitale radiografie — tot 80% minder straling",
-      "Sterilisatie volgens de normen, zichtbaar voor iedereen",
-      "Een offerte vóór elke behandeling boven 150 €",
-      "Aparte kinderagenda, buiten de piekuren",
-    ],
-    figuresLabel: "In cijfers",
-    figuresTitle: "Wat u kunt verwachten",
-    figures: ["min gemiddelde wachttijd", "behandelingen", "openingsdagen"],
-    figuresNote: "Praktische informatie te bevestigen bij de praktijk.",
     reviewsLabel: "Beoordelingen",
     reviewsTitle: "WAT MEN OVER ONS ZEGT",
     noReviews: "Er zijn momenteel geen geverifieerde beoordelingen gepubliceerd.",
@@ -114,9 +88,6 @@ export default function HomePage() {
   const clinicConfig = useSiteSettings();
   const copy = pageCopy[language];
   const homeTreatments = treatmentsByLanguage[language];
-  const openDays = clinicConfig.hours.filter((value) => value && value !== "closed").length;
-  // Only values backed by site data: the average wait time is not tracked anywhere yet.
-  const figureValues = ["—", String(homeTreatments.length), openDays > 0 ? String(openDays) : "—"];
   const heroLabel = clinicConfig.city ? `${copy.heroLabel} · ${clinicConfig.city}` : copy.heroLabel;
 
   return (
@@ -191,24 +162,6 @@ export default function HomePage() {
         <h2>{copy.questionTitle}</h2>
         <p>{copy.questionCopy}</p>
         <ButtonLink href="/rendez-vous">{copy.appointment}</ButtonLink>
-      </section>
-
-      <section className="home-clinic">
-        <div className="content-shell home-clinic__grid">
-          <div>
-            <SectionLabel>{copy.clinicLabel}</SectionLabel>
-            <h2 className="editorial-title">{copy.clinicTitle}</h2>
-            <p className="home-clinic__lead">{copy.clinicLead}</p>
-            <ul>{copy.clinicPoints.map((point) => <li key={point}>{point}</li>)}</ul>
-          </div>
-          <aside>
-            <Image className="home-clinic__watermark" src="/brand/cura-tooth.png" alt="" width={656} height={784} sizes="(max-width: 720px) 80vw, 40vw" quality={45} aria-hidden="true" />
-            <SectionLabel>{copy.figuresLabel}</SectionLabel>
-            <h3>{copy.figuresTitle}</h3>
-            <div className="home-clinic__numbers">{copy.figures.map((label, index) => <p key={label}><strong>{figureValues[index]}</strong><span>{label}</span></p>)}</div>
-            <small>{copy.figuresNote}</small>
-          </aside>
-        </div>
       </section>
 
       <ReviewsSection label={copy.reviewsLabel} title={copy.reviewsTitle} messages={copy} />
