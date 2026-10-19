@@ -4343,8 +4343,13 @@ textarea {
   line-height: 0;
 }
 
+.logo__name {
+  flex: 0 0 auto;
+}
+
 .logo__wordmark {
   width: auto;
+  max-width: none;
   height: 38px;
 }
 

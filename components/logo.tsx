@@ -28,7 +28,7 @@ export function Logo({
         />
       )}
       <span className="logo__name">
-        <Image className="logo__wordmark" src="/brand/cura-wordmark.webp" alt="CURA" width={820} height={249} sizes="160px" priority={priority} />
+        <Image className="logo__wordmark" src="/brand/cura-wordmark.webp" alt="CURA" width={820} height={249} sizes="(max-width: 540px) 120px, 160px" priority={priority} />
       </span>
       {!nameOnly && (
         <span className="logo__descriptor">
