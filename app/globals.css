@@ -4335,3 +4335,25 @@ textarea {
   font-weight: 500;
   letter-spacing: -0.02em;
 }
+
+/* Logo : écriture CURA en image (fichier fourni) */
+.logo__name {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+
+.logo__wordmark {
+  width: auto;
+  height: 38px;
+}
+
+.site-footer--dark .logo__wordmark {
+  height: 22px;
+}
+
+@media (max-width: 540px) {
+  .site-header .logo__wordmark {
+    height: 28px;
+  }
+}
