@@ -4292,6 +4292,7 @@ textarea {
 @media (min-width: 1025px) {
   .site-header .site-nav {
     gap: clamp(20px, 2.6vw, 40px);
+    margin-right: clamp(24px, 4vw, 64px);
   }
 
   .site-header .site-nav a {
