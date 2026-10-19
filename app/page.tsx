@@ -9,7 +9,6 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { useSiteSettings } from "@/components/site-settings-provider";
 import { ValueIcon } from "@/components/value-icons";
-import { treatmentsByLanguage } from "@/lib/content";
 
 
 const pageCopy = {
@@ -87,7 +86,6 @@ export default function HomePage() {
   const { language } = useLanguage();
   const clinicConfig = useSiteSettings();
   const copy = pageCopy[language];
-  const homeTreatments = treatmentsByLanguage[language];
   const heroLabel = clinicConfig.city ? `${copy.heroLabel} · ${clinicConfig.city}` : copy.heroLabel;
 
   return (
@@ -111,11 +109,11 @@ export default function HomePage() {
       </section>
 
       <section className="home-marquee" aria-label={copy.marqueeLabel}>
-        <ul className="sr-only">{homeTreatments.map((care) => <li key={care.number}>{care.name}</li>)}</ul>
+        <ul className="sr-only">{copy.competences.map(([slug, title]) => <li key={slug}>{title}</li>)}</ul>
         <div className="home-marquee__track" aria-hidden="true">
           {[0, 1].map((loop) => (
             <div className="home-marquee__group" key={loop}>
-              {homeTreatments.map((care) => <span key={care.number}>{care.name}</span>)}
+              {copy.competences.map(([slug, title]) => <span key={slug}>{title}</span>)}
             </div>
           ))}
         </div>
