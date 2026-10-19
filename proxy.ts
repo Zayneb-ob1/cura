@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 export function proxy(request: NextRequest) {
   const queryLanguage = request.nextUrl.searchParams.get("lang");
   const cookieLanguage = request.cookies.get("cura-language")?.value;
-  const language = queryLanguage === "nl" || (queryLanguage !== "fr" && cookieLanguage === "nl") ? "nl" : "fr";
+  // Dutch is the default on a first visit; French only when chosen (?lang=fr or the saved cookie).
+  const language = queryLanguage === "fr" || (queryLanguage !== "nl" && cookieLanguage === "fr") ? "fr" : "nl";
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-cura-language", language);
   return NextResponse.next({ request: { headers: requestHeaders } });
