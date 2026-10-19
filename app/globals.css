@@ -4315,3 +4315,7 @@ textarea {
     grid-column: 2;
   }
 }
+
+.home-hero__content > p {
+  white-space: pre-line;
+}
