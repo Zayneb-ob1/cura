@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { ButtonLink, SectionLabel } from "@/components/buttons";
+import { SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
 import { PageCta, PageHero } from "@/components/page-hero";
 import { SiteFooter } from "@/components/site-footer";
@@ -33,7 +33,6 @@ const pageCopy = {
       ["Les soins dentaires chez Cura", "Nous proposons une approche personnalisée pour répondre aux besoins de chaque patient. Nos soins incluent la dentisterie générale, la parodontologie, l’implantologie, l’orthodontie, l’esthétique dentaire et l’endodontie. Chaque traitement débute par une consultation permettant d’évaluer votre santé bucco-dentaire et de définir les solutions les plus adaptées à votre situation."],
       ["Les tarifs des soins dentaires ?", "Les tarifs varient selon la nature du traitement et les soins nécessaires. Un devis personnalisé vous sera proposé après votre consultation, afin de vous informer clairement sur les différentes étapes et leur coût."],
     ],
-    pricing: "Voir les tarifs indicatifs",
     ctaTitle: <>Pour une évaluation personnalisée<br />et un devis sur-mesure</>,
     ctaCopy: "Réservez en ligne en deux minutes. Vous recevez une confirmation sous 24 h.",
   },
@@ -61,7 +60,6 @@ const pageCopy = {
       ["De tandzorg bij Cura", "We kiezen voor een persoonlijke aanpak die aansluit bij de noden van elke patiënt. Onze zorg omvat algemene tandheelkunde, parodontologie, implantologie, orthodontie, esthetische tandheelkunde en endodontie. Elke behandeling start met een consultatie om uw mondgezondheid te beoordelen en de meest geschikte oplossingen te bepalen."],
       ["Wat kost een tandheelkundige behandeling?", "De tarieven hangen af van de aard van de behandeling en de nodige zorg. Na uw consultatie krijgt u een persoonlijke offerte, zodat u duidelijk weet welke stappen er volgen en wat ze kosten."],
     ],
-    pricing: "Richtprijzen bekijken",
     ctaTitle: <>Voor een persoonlijke beoordeling<br />en een offerte op maat</>,
     ctaCopy: "Boek online in twee minuten. U ontvangt binnen 24 uur een bevestiging.",
   },
@@ -137,7 +135,6 @@ export default function SoinsPage() {
                 <p>{text}</p>
               </article>
             ))}
-            <div className="info-rows__action"><ButtonLink href="/tarifs" tone="outline">{copy.pricing}</ButtonLink></div>
           </div>
         </section>
 
