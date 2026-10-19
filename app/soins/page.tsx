@@ -102,7 +102,7 @@ export default function SoinsPage() {
           accent={copy.heroLine2}
           text={copy.heroCopy}
           action={{ href: "/rendez-vous", label: copy.appointment }}
-          photo="/images/competences/esthetique.webp"
+          photo="/images/competences/esthetique-photo.webp"
         />
 
         <section className="care-acts">
