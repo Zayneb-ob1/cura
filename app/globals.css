@@ -4620,3 +4620,25 @@ textarea {
   height: 68px;
   margin-top: 12px;
 }
+
+/* Avis : texte plus lisible et plus grand */
+.home-reviews blockquote {
+  color: #1f1f1d;
+  font-size: clamp(19px, 1.6vw, 22px);
+  line-height: 1.45;
+}
+
+.home-reviews__grid p {
+  color: #4a4a46;
+  font-size: 14px;
+}
+
+.home-reviews__stars {
+  font-size: 16px;
+  letter-spacing: 0.08em;
+}
+
+.home-reviews .home-reviews__source {
+  color: #6f5a30;
+  font-size: 15px;
+}
