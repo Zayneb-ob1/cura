@@ -16,7 +16,7 @@ const pageCopy = {
     heroCopy: "Bénéficiez de soins dentaires personnalisés et d’une qualité supérieure, adaptés à vos besoins.",
     introTitle: "Prendre rendez-vous chez Cura",
     introText: ["Parce que chaque patient est différent, il est important de déterminer avec justesse votre besoin et d’adapter nos soins.", "Si vous souhaitez obtenir un devis, vous devez d’abord vous rendre au cabinet pour que nous évaluions ensemble l’intervention nécessaire.", "Pour cela, contactez-nous par e-mail, par téléphone, ou remplissez le formulaire ci-dessous pour convenir d’un rendez-vous.", "Nous avons hâte d’échanger avec vous."],
-    callClinic: "Appeler la clinique", sendMail: "Envoyer un e-mail", bookOnline: "Réserver en ligne", bookNow: "Réservez maintenant", fullName: "Nom complet", consultationType: "Types de consultation", chooseTime: "Choisissez l’heure du rendez-vous", nextStep: "Suivant", back: "Retour", doctoranytime: "Prendre rendez-vous sur Doctoranytime",
+    callClinic: "Appeler la clinique", sendMail: "Envoyer un e-mail", bookOnline: "Réserver en ligne", bookNow: "Réservez maintenant", fullName: "Nom complet", consultationType: "Types de consultation", chooseTime: "Choisissez l’heure du rendez-vous", nextStep: "Suivant", back: "Retour", doctoranytime: "Prendre rendez-vous sur Doctoranytime", bookSite: "Prendre rendez-vous en ligne",
     reasonsTitle: "Pour quelles raisons prendre rendez-vous ?",
     reasonsIntro: "Chez Cura, nous proposons une prise en charge personnalisée pour préserver votre santé bucco-dentaire et sublimer votre sourire.",
     reasons: ["Soins dentaires courants : consultations, détartrage, extractions et endodontie.", "Esthétique du sourire : blanchiment et facettes dentaires.", "Orthodontie et prothèses : appareils, gouttières et couronnes.", "Implantologie : implants dentaires et soins gingivaux.", "Bilans spécialisés : bilans parodontaux et orthodontiques.", "Suivi et deuxième avis : évaluation et conseils personnalisés."],
@@ -32,7 +32,7 @@ const pageCopy = {
     heroCopy: "Geniet van persoonlijke tandzorg van hoge kwaliteit, afgestemd op uw noden.",
     introTitle: "Een afspraak maken bij Cura",
     introText: ["Omdat elke patiënt anders is, is het belangrijk om uw noden juist in te schatten en onze zorg daarop af te stemmen.", "Wenst u een offerte? Kom dan eerst langs in de praktijk, zodat we samen de nodige behandeling kunnen bepalen.", "Contacteer ons daarvoor per e-mail of telefoon, of vul het formulier hieronder in om een afspraak te maken.", "We kijken ernaar uit u te ontmoeten."],
-    callClinic: "De kliniek bellen", sendMail: "Een e-mail sturen", bookOnline: "Online reserveren", bookNow: "Reserveer nu", fullName: "Volledige naam", consultationType: "Soort consultatie", chooseTime: "Kies het tijdstip van de afspraak", nextStep: "Volgende", back: "Terug", doctoranytime: "Afspraak maken via Doctoranytime",
+    callClinic: "De kliniek bellen", sendMail: "Een e-mail sturen", bookOnline: "Online reserveren", bookNow: "Reserveer nu", fullName: "Volledige naam", consultationType: "Soort consultatie", chooseTime: "Kies het tijdstip van de afspraak", nextStep: "Volgende", back: "Terug", doctoranytime: "Afspraak maken via Doctoranytime", bookSite: "Online een afspraak maken",
     reasonsTitle: "Waarvoor kunt u een afspraak maken?",
     reasonsIntro: "Bij Cura bieden we persoonlijke zorg om uw mondgezondheid te bewaren en uw glimlach te verfraaien.",
     reasons: ["Dagelijkse tandzorg: consultaties, tandsteenverwijdering, extracties en endodontie.", "Esthetiek van de glimlach: bleken en facetten.", "Orthodontie en prothesen: beugels, aligners en kronen.", "Implantologie: tandimplantaten en tandvleeszorg.", "Gespecialiseerde onderzoeken: parodontale en orthodontische bilans.", "Opvolging en tweede advies: beoordeling en persoonlijk advies."],
@@ -214,6 +214,7 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
             <div className="booking-intro__actions">
               {clinicConfig.hasPhone && <a className="button-link button-link--green" href={`tel:${clinicConfig.phone}`}>{copy.callClinic}</a>}
               {clinicConfig.email && <a className="button-link button-link--green" href={`mailto:${clinicConfig.email}`}>{copy.sendMail}</a>}
+              <a className="button-link button-link--green" href={withContactForm ? "/rendez-vous#reserver" : "#reserver"}>{copy.bookSite}</a>
               <a className="button-link button-link--green" href="https://www.doctoranytime.be/d/dentiste/ayoub-khana" target="_blank" rel="noreferrer">{copy.doctoranytime}</a>
             </div>
           </div>
