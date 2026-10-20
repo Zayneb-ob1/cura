@@ -4413,3 +4413,11 @@ textarea {
   font-style: italic;
   font-weight: 300;
 }
+
+.competence-card__media {
+  overflow: hidden;
+}
+
+.competence-card__media::after {
+  z-index: 1;
+}
