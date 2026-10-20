@@ -5,7 +5,7 @@ const city = process.env.NEXT_PUBLIC_CLINIC_CITY?.trim() || "Hasselt";
 const phoneDisplay = process.env.NEXT_PUBLIC_CLINIC_PHONE_DISPLAY?.trim() || "";
 const phone = process.env.NEXT_PUBLIC_CLINIC_PHONE?.trim().replace(/^tel:/, "") || "";
 const email = process.env.NEXT_PUBLIC_CLINIC_EMAIL?.trim() || "";
-const mapUrl = process.env.NEXT_PUBLIC_CLINIC_MAP_URL?.trim() || "https://www.google.com/maps/search/?api=1&query=Kuringersteenweg+511%2C+3511+Hasselt%2C+Belgique";
+const mapUrl = process.env.NEXT_PUBLIC_CLINIC_MAP_URL?.trim() || "https://maps.app.goo.gl/5bzjFgp5hH6oV41s6";
 const scheduleFr = process.env.NEXT_PUBLIC_CLINIC_SCHEDULE_FR?.trim() || "";
 const scheduleNl = process.env.NEXT_PUBLIC_CLINIC_SCHEDULE_NL?.trim() || "";
 const emergencyFr = process.env.NEXT_PUBLIC_CLINIC_EMERGENCY_FR?.trim() || "";

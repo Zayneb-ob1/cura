@@ -4786,3 +4786,10 @@ textarea {
 .info-cards p {
   font-size: 14px;
 }
+
+.appointment-page .contact-form .button-link {
+  min-height: 44px;
+  border-radius: 0;
+  background: #887044;
+  color: #fff;
+}
