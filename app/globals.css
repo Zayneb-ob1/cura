@@ -4934,3 +4934,36 @@ textarea {
   opacity: 0.07;
   bottom: 40px;
 }
+
+/* Icônes des valeurs : même cadre pour toutes, à toutes les tailles d'écran */
+.home-values .value-icon {
+  width: 96px;
+  height: 80px;
+}
+
+.home-values .value-icon > img:first-child,
+.home-values__grid li:first-child .value-icon > img:first-child {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  margin-top: 0;
+  object-fit: contain;
+}
+
+.home-values__grid li:first-child .value-icon {
+  padding: 8px 14px 4px;
+}
+
+.home-values .value-icon .value-icon__sparkle {
+  top: -4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 720px) {
+  .home-values .value-icon {
+    width: 84px;
+    height: 70px;
+  }
+}
