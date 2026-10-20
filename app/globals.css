@@ -4747,3 +4747,7 @@ textarea {
     font-size: 15px;
   }
 }
+
+.care-acts__watermark {
+  bottom: -200px;
+}
