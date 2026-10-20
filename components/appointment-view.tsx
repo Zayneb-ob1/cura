@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
 import { ContactFormSection } from "@/components/contact-form-section";
@@ -16,7 +16,7 @@ const pageCopy = {
     heroCopy: "Bénéficiez de soins dentaires personnalisés et d’une qualité supérieure, adaptés à vos besoins.",
     introTitle: "Prendre rendez-vous chez Cura",
     introText: ["Parce que chaque patient est différent, il est important de déterminer avec justesse votre besoin et d’adapter nos soins.", "Si vous souhaitez obtenir un devis, vous devez d’abord vous rendre au cabinet pour que nous évaluions ensemble l’intervention nécessaire.", "Pour cela, contactez-nous par e-mail, par téléphone, ou remplissez le formulaire ci-dessous pour convenir d’un rendez-vous.", "Nous avons hâte d’échanger avec vous."],
-    callClinic: "Appeler la clinique", sendMail: "Envoyer un e-mail", bookOnline: "Réserver en ligne", bookNow: "Réservez maintenant",
+    callClinic: "Appeler la clinique", sendMail: "Envoyer un e-mail", bookOnline: "Réserver en ligne", bookNow: "Réservez maintenant", fullName: "Nom complet", consultationType: "Types de consultation", chooseTime: "Choisissez l’heure du rendez-vous", nextStep: "Suivant", back: "Retour", doctoranytime: "Prendre rendez-vous sur Doctoranytime",
     reasonsTitle: "Pour quelles raisons prendre rendez-vous ?",
     reasonsIntro: "Chez Cura, nous proposons une prise en charge personnalisée pour préserver votre santé bucco-dentaire et sublimer votre sourire.",
     reasons: ["Soins dentaires courants : consultations, détartrage, extractions et endodontie.", "Esthétique du sourire : blanchiment et facettes dentaires.", "Orthodontie et prothèses : appareils, gouttières et couronnes.", "Implantologie : implants dentaires et soins gingivaux.", "Bilans spécialisés : bilans parodontaux et orthodontiques.", "Suivi et deuxième avis : évaluation et conseils personnalisés."],
@@ -36,7 +36,7 @@ const pageCopy = {
     heroCopy: "Geniet van persoonlijke tandzorg van hoge kwaliteit, afgestemd op uw noden.",
     introTitle: "Een afspraak maken bij Cura",
     introText: ["Omdat elke patiënt anders is, is het belangrijk om uw noden juist in te schatten en onze zorg daarop af te stemmen.", "Wenst u een offerte? Kom dan eerst langs in de praktijk, zodat we samen de nodige behandeling kunnen bepalen.", "Contacteer ons daarvoor per e-mail of telefoon, of vul het formulier hieronder in om een afspraak te maken.", "We kijken ernaar uit u te ontmoeten."],
-    callClinic: "De kliniek bellen", sendMail: "Een e-mail sturen", bookOnline: "Online reserveren", bookNow: "Reserveer nu",
+    callClinic: "De kliniek bellen", sendMail: "Een e-mail sturen", bookOnline: "Online reserveren", bookNow: "Reserveer nu", fullName: "Volledige naam", consultationType: "Soort consultatie", chooseTime: "Kies het tijdstip van de afspraak", nextStep: "Volgende", back: "Terug", doctoranytime: "Afspraak maken via Doctoranytime",
     reasonsTitle: "Waarvoor kunt u een afspraak maken?",
     reasonsIntro: "Bij Cura bieden we persoonlijke zorg om uw mondgezondheid te bewaren en uw glimlach te verfraaien.",
     reasons: ["Dagelijkse tandzorg: consultaties, tandsteenverwijdering, extracties en endodontie.", "Esthetiek van de glimlach: bleken en facetten.", "Orthodontie en prothesen: beugels, aligners en kronen.", "Implantologie: tandimplantaten en tandvleeszorg.", "Gespecialiseerde onderzoeken: parodontale en orthodontische bilans.", "Opvolging en tweede advies: beoordeling en persoonlijk advies."],
@@ -53,7 +53,7 @@ const pageCopy = {
   },
 } as const;
 
-type Language = "fr" | "nl";
+
 
 type EditableField = {
   key: string;
@@ -78,14 +78,6 @@ type EditableForm = {
   fields: EditableField[];
 };
 
-const appointmentFieldKeys = new Set(["care", "day", "time", "firstName", "lastName", "email", "phone", "note", "consent"]);
-const appointmentDetailsKeys = new Set(["care", "day", "time"]);
-const patientDetailsKeys = new Set(["firstName", "lastName", "email", "phone", "note"]);
-
-function localizedFieldValue(field: EditableField, language: Language, property: "label" | "placeholder") {
-  if (property === "label") return language === "fr" ? field.labelFr : field.labelNl;
-  return language === "fr" ? field.placeholderFr : field.placeholderNl;
-}
 
 function isEditableForm(value: unknown): value is EditableForm {
   if (!value || typeof value !== "object") return false;
@@ -127,17 +119,18 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
   const [care, setCare] = useState("");
   const [submissionState, setSubmissionState] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [formConfig, setFormConfig] = useState<EditableForm | null>(null);
+  const [step, setStep] = useState<1 | 2>(1);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const configuredFields = formConfig
-    ? [...formConfig.fields]
-        .filter((field) => field.visible && appointmentFieldKeys.has(field.key))
-        .sort((first, second) => first.order - second.order)
-    : null;
-  const appointmentFields = configuredFields?.filter((field) => appointmentDetailsKeys.has(field.key));
-  const patientFields = configuredFields?.filter((field) => patientDetailsKeys.has(field.key));
-  const consentField = configuredFields?.find((field) => field.key === "consent");
-  const fieldLabel = (field: EditableField, fallback: string) => localizedFieldValue(field, language, "label") || fallback;
-  const fieldPlaceholder = (field: EditableField) => localizedFieldValue(field, language, "placeholder") || undefined;
+  // Step 1 of the Figma form: check the visible fields before showing the contact details.
+  function goToDetails() {
+    const fields = formRef.current?.querySelectorAll<HTMLInputElement | HTMLSelectElement>(".booking-form__step:first-child [name]");
+    for (const field of fields ?? []) {
+      if (!field.reportValidity()) return;
+    }
+    setStep(2);
+  }
+
   const configuredDescription = language === "fr" ? formConfig?.descriptionFr : formConfig?.descriptionNl;
   const configuredSubmitLabel = language === "fr" ? formConfig?.submitLabelFr : formConfig?.submitLabelNl;
 
@@ -176,6 +169,8 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
     const form = event.currentTarget;
     const data = new FormData(form);
     const selectedCare = String(data.get("care") ?? "");
+    // The design asks for one "full name" field; the API stores first and last name separately.
+    const [firstName, ...otherNames] = String(data.get("fullName") ?? "").trim().split(/\s+/);
     const selectedCareName = treatments.find((item) => item.number === selectedCare)?.name ?? copy.unknown;
 
     setSubmissionState("sending");
@@ -188,8 +183,8 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
           care: selectedCareName,
           day: String(data.get("day") ?? ""),
           time: String(data.get("time") ?? ""),
-          firstName: String(data.get("firstName") ?? "").trim(),
-          lastName: String(data.get("lastName") ?? "").trim(),
+          firstName,
+          lastName: otherNames.join(" ") || firstName,
           email: String(data.get("email") ?? "").trim(),
           phone: String(data.get("phone") ?? "").trim(),
           note: String(data.get("note") ?? "").trim(),
@@ -201,6 +196,7 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
 
       form.reset();
       setCare("");
+      setStep(1);
       setSubmissionState("success");
       try {
         window.localStorage.setItem("cura-dashboard-update", String(Date.now()));
@@ -210,18 +206,6 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
     } catch {
       setSubmissionState("error");
     }
-  }
-
-  function renderAppointmentField(field: EditableField) {
-    if (field.key === "care") return <div className="form-field appointment-form__wide" key={field.key}><label htmlFor="care">{fieldLabel(field, copy.care)}</label><select id="care" name="care" required={field.required} value={care} onChange={(event) => setCare(event.target.value)}><option value="">{fieldPlaceholder(field) || copy.unknown}</option>{treatments.map((item) => <option key={item.number} value={item.number}>{item.name}</option>)}</select></div>;
-    if (field.key === "day") return <div className="form-field" key={field.key}><label htmlFor="preferred-day">{fieldLabel(field, copy.day)}</label><input id="preferred-day" name="day" type="date" max="9999-12-31" onInput={limitDateToFourDigitYear} required={field.required} /></div>;
-    if (field.key === "time") return <div className="form-field" key={field.key}><label htmlFor="preferred-time">{fieldLabel(field, copy.time)}</label><select id="preferred-time" name="time" required={field.required}><option>{copy.morning}</option><option>{copy.afternoon}</option><option>{copy.any}</option></select></div>;
-    if (field.key === "firstName") return <div className="form-field" key={field.key}><label htmlFor="first-name">{fieldLabel(field, copy.firstName)}</label><input id="first-name" name="firstName" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="given-name" /></div>;
-    if (field.key === "lastName") return <div className="form-field" key={field.key}><label htmlFor="last-name">{fieldLabel(field, copy.lastName)}</label><input id="last-name" name="lastName" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="family-name" /></div>;
-    if (field.key === "email") return <div className="form-field" key={field.key}><label htmlFor="appointment-email">{fieldLabel(field, copy.email)}</label><input id="appointment-email" name="email" type="email" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="email" /></div>;
-    if (field.key === "phone") return <div className="form-field" key={field.key}><label htmlFor="appointment-phone">{fieldLabel(field, copy.phone)}</label><input id="appointment-phone" name="phone" type="tel" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="tel" /></div>;
-    if (field.key === "note") return <div className="form-field appointment-form__wide" key={field.key}><label htmlFor="note">{fieldLabel(field, copy.note)}</label><textarea id="note" name="note" required={field.required} placeholder={fieldPlaceholder(field) || copy.placeholder} /></div>;
-    return null;
   }
 
   return (
@@ -238,7 +222,7 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
             <div className="booking-intro__actions">
               {clinicConfig.hasPhone && <a className="button-link button-link--green" href={`tel:${clinicConfig.phone}`}>{copy.callClinic}</a>}
               {clinicConfig.email && <a className="button-link button-link--green" href={`mailto:${clinicConfig.email}`}>{copy.sendMail}</a>}
-              <a className="button-link button-link--green" href="#reserver">{copy.bookOnline}</a>
+              <a className="button-link button-link--green" href="https://www.doctoranytime.be/d/dentiste/ayoub-khana" target="_blank" rel="noreferrer">{copy.doctoranytime}</a>
             </div>
           </div>
           <div className="booking-intro__text">
@@ -249,41 +233,31 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
 
       <section className="content-shell appointment-layout" id="reserver">
         <h2 className="appointment-layout__title">{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || copy.bookNow}</h2>
-        <form className="appointment-form" onSubmit={submitAppointment} aria-busy={submissionState === "sending"}>
-          <div className="appointment-form__section">
-            <span aria-hidden="true">01</span>
-            <div>
-              <SectionLabel>{copy.appointment}</SectionLabel>
-              <div className="appointment-form__grid">
-                {appointmentFields ? appointmentFields.map(renderAppointmentField) : (
-                  <>
-                    <div className="form-field appointment-form__wide"><label htmlFor="care">{copy.care}</label><select id="care" name="care" value={care} onChange={(event) => setCare(event.target.value)}><option value="">{copy.unknown}</option>{treatments.map((item) => <option key={item.number} value={item.number}>{item.name}</option>)}</select></div>
-                    <div className="form-field"><label htmlFor="preferred-day">{copy.day}</label><input id="preferred-day" name="day" type="date" max="9999-12-31" onInput={limitDateToFourDigitYear} required /></div>
-                    <div className="form-field"><label htmlFor="preferred-time">{copy.time}</label><select id="preferred-time" name="time"><option>{copy.morning}</option><option>{copy.afternoon}</option><option>{copy.any}</option></select></div>
-                  </>
-                )}
+        <form className="booking-form" onSubmit={submitAppointment} aria-busy={submissionState === "sending"} ref={formRef}>
+          <div className="booking-form__step" hidden={step !== 1}>
+            <div className="booking-form__row">
+              <div className="form-field"><label htmlFor="full-name">{copy.fullName}</label><input id="full-name" name="fullName" required autoComplete="name" /></div>
+              <div className="form-field"><label htmlFor="appointment-phone">{copy.phone}</label><input id="appointment-phone" name="phone" type="tel" required autoComplete="tel" /></div>
+            </div>
+            <div className="form-field"><label htmlFor="care">{copy.consultationType}</label><select id="care" name="care" value={care} onChange={(event) => setCare(event.target.value)}><option value="">{copy.unknown}</option>{treatments.map((item) => <option key={item.number} value={item.number}>{item.name}</option>)}</select></div>
+            <fieldset className="booking-form__slot">
+              <legend>{copy.chooseTime}</legend>
+              <div className="booking-form__row">
+                <div className="form-field"><label htmlFor="preferred-day">{copy.day}</label><input id="preferred-day" name="day" type="date" max="9999-12-31" onInput={limitDateToFourDigitYear} required /></div>
+                <div className="form-field"><label htmlFor="preferred-time">{copy.time}</label><select id="preferred-time" name="time"><option>{copy.morning}</option><option>{copy.afternoon}</option><option>{copy.any}</option></select></div>
               </div>
+            </fieldset>
+            <button type="button" className="booking-form__button" onClick={goToDetails}>{copy.nextStep}</button>
+          </div>
+          <div className="booking-form__step" hidden={step !== 2}>
+            <div className="form-field"><label htmlFor="appointment-email">{copy.email}</label><input id="appointment-email" name="email" type="email" required={step === 2} autoComplete="email" /></div>
+            <div className="form-field"><label htmlFor="note">{copy.note}</label><textarea id="note" name="note" placeholder={copy.placeholder} /></div>
+            <label className="appointment-consent"><input type="checkbox" name="consent" required={step === 2} /> {copy.consent}</label>
+            <div className="booking-form__actions">
+              <button type="button" className="booking-form__back" onClick={() => setStep(1)}>{copy.back}</button>
+              <button type="submit" className="booking-form__button" disabled={submissionState === "sending" || formConfig?.enabled === false}>{submissionState === "sending" ? copy.sending : configuredSubmitLabel || copy.send}</button>
             </div>
           </div>
-          <div className="appointment-form__section">
-            <span aria-hidden="true">02</span>
-            <div>
-              <SectionLabel>{copy.details}</SectionLabel>
-              <div className="appointment-form__grid">
-                {patientFields ? patientFields.map(renderAppointmentField) : (
-                  <>
-                    <div className="form-field"><label htmlFor="first-name">{copy.firstName}</label><input id="first-name" name="firstName" required autoComplete="given-name" /></div>
-                    <div className="form-field"><label htmlFor="last-name">{copy.lastName}</label><input id="last-name" name="lastName" required autoComplete="family-name" /></div>
-                    <div className="form-field"><label htmlFor="appointment-email">{copy.email}</label><input id="appointment-email" name="email" type="email" required autoComplete="email" /></div>
-                    <div className="form-field"><label htmlFor="appointment-phone">{copy.phone}</label><input id="appointment-phone" name="phone" type="tel" required autoComplete="tel" /></div>
-                    <div className="form-field appointment-form__wide"><label htmlFor="note">{copy.note}</label><textarea id="note" name="note" placeholder={copy.placeholder} /></div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-          {configuredFields ? consentField && <label className="appointment-consent"><input type="checkbox" name="consent" required={consentField.required} /> {fieldLabel(consentField, copy.consent)}</label> : <label className="appointment-consent"><input type="checkbox" name="consent" required /> {copy.consent}</label>}
-          <button type="submit" className="button-link button-link--green" disabled={submissionState === "sending" || formConfig?.enabled === false}>{submissionState === "sending" ? copy.sending : configuredSubmitLabel || copy.send}</button>
           {submissionState !== "idle" && <p className="form-status" role="status" aria-live="polite">{copy[submissionState]}</p>}
         </form>
       </section>

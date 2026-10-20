@@ -18,7 +18,7 @@ const pageCopy = {
     address: "Adresse", directions: "Ouvrir l’itinéraire", hours: "Horaires",
     name: "Nom", email: "E-mail", subject: "Sujet", message: "Message",
     subjects: { general: "Question générale", file: "Dossier", transfer: "Transfert de dossier" },
-    send: "Envoyer le message", response: "Nous répondons sous 24 h ouvrées.", sending: "Envoi en cours…", success: "Votre message a bien été envoyé. Nous vous répondrons sous 24 h ouvrées.", error: "Impossible d’envoyer votre message pour le moment. Veuillez réessayer.",
+    send: "Envoyer", fullName: "Nom complet", response: "Nous répondons sous 24 h ouvrées.", sending: "Envoi en cours…", success: "Votre message a bien été envoyé. Nous vous répondrons sous 24 h ouvrées.", error: "Impossible d’envoyer votre message pour le moment. Veuillez réessayer.",
     phoneLabel: "Téléphone", emailLabel: "E-mail", urgencyLabel: "Urgences", faqTitle: "Questions fréquentes",
     addressPending: "Adresse à confirmer",
     contactPending: "À confirmer",
@@ -43,7 +43,7 @@ const pageCopy = {
     address: "Adres", directions: "Route openen", hours: "Openingsuren",
     name: "Naam", email: "E-mail", subject: "Onderwerp", message: "Bericht",
     subjects: { general: "Algemene vraag", file: "Dossier", transfer: "Dossieroverdracht" },
-    send: "Bericht versturen", response: "We antwoorden binnen 24 werkuren.", sending: "Bezig met versturen…", success: "Uw bericht is goed verzonden. We antwoorden binnen 24 werkuren.", error: "Uw bericht kan momenteel niet worden verzonden. Probeer het opnieuw.",
+    send: "Versturen", fullName: "Volledige naam", response: "We antwoorden binnen 24 werkuren.", sending: "Bezig met versturen…", success: "Uw bericht is goed verzonden. We antwoorden binnen 24 werkuren.", error: "Uw bericht kan momenteel niet worden verzonden. Probeer het opnieuw.",
     phoneLabel: "Telefoon", emailLabel: "E-mail", urgencyLabel: "Dringend", faqTitle: "Veelgestelde vragen",
     addressPending: "Adres te bevestigen",
     contactPending: "Te bevestigen",
@@ -56,7 +56,6 @@ const pageCopy = {
   },
 } as const;
 
-type Language = "fr" | "nl";
 
 type EditableField = {
   key: string;
@@ -81,12 +80,6 @@ type EditableForm = {
   fields: EditableField[];
 };
 
-const contactFieldKeys = new Set(["name", "email", "phone", "subject", "message"]);
-
-function localizedFieldValue(field: EditableField, language: Language, property: "label" | "placeholder") {
-  if (property === "label") return language === "fr" ? field.labelFr : field.labelNl;
-  return language === "fr" ? field.placeholderFr : field.placeholderNl;
-}
 
 function isEditableForm(value: unknown): value is EditableForm {
   if (!value || typeof value !== "object") return false;
@@ -121,15 +114,7 @@ export function ContactFormSection() {
   const [submissionState, setSubmissionState] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [formConfig, setFormConfig] = useState<EditableForm | null>(null);
 
-  const configuredFields = formConfig
-    ? [...formConfig.fields]
-        .filter((field) => field.visible && contactFieldKeys.has(field.key))
-        .sort((first, second) => first.order - second.order)
-    : null;
 
-  const fieldLabel = (field: EditableField, fallback: string) => localizedFieldValue(field, language, "label") || fallback;
-  const fieldPlaceholder = (field: EditableField) => localizedFieldValue(field, language, "placeholder") || undefined;
-  const configuredDescription = language === "fr" ? formConfig?.descriptionFr : formConfig?.descriptionNl;
   const configuredSubmitLabel = language === "fr" ? formConfig?.submitLabelFr : formConfig?.submitLabelNl;
 
   useEffect(() => {
@@ -201,28 +186,14 @@ export function ContactFormSection() {
       <section className="content-shell contact-layout contact-layout--form" id="contact-form">
         <h2 className="contact-layout__title">{copy.formTitle}</h2>
         <div className="contact-right">
-          <form className="contact-form" onSubmit={submitContact} aria-busy={submissionState === "sending"}>
-            <div className="contact-form__grid">
-              {configuredFields ? configuredFields.map((field) => {
-                if (field.key === "name") return <div className="form-field" key={field.key}><label htmlFor="contact-name">{fieldLabel(field, copy.name)}</label><input id="contact-name" name="name" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="name" /></div>;
-                if (field.key === "email") return <div className="form-field" key={field.key}><label htmlFor="contact-email">{fieldLabel(field, copy.email)}</label><input id="contact-email" name="email" type="email" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="email" /></div>;
-                if (field.key === "phone") return <div className="form-field" key={field.key}><label htmlFor="contact-phone">{fieldLabel(field, copy.phoneLabel)}</label><input id="contact-phone" name="phone" type="tel" required={field.required} placeholder={fieldPlaceholder(field)} autoComplete="tel" /></div>;
-                if (field.key === "subject") return <div className="form-field contact-form__subject" key={field.key}><label htmlFor="contact-subject">{fieldLabel(field, copy.subject)}</label><select id="contact-subject" name="subject" required={field.required} value={subject} onChange={(event) => setSubject(event.target.value)}><option value="general">{copy.subjects.general}</option><option value="file">{copy.subjects.file}</option><option value="transfer">{copy.subjects.transfer}</option></select></div>;
-                if (field.key === "message") return <div className="form-field contact-form__message" key={field.key}><label htmlFor="contact-message">{fieldLabel(field, copy.message)}</label><textarea id="contact-message" name="message" required={field.required} placeholder={fieldPlaceholder(field)} /></div>;
-                return null;
-              }) : (
-                <>
-                  <div className="form-field"><label htmlFor="contact-name">{copy.name}</label><input id="contact-name" name="name" required autoComplete="name" /></div>
-                  <div className="form-field"><label htmlFor="contact-email">{copy.email}</label><input id="contact-email" name="email" type="email" required autoComplete="email" /></div>
-                  <div className="form-field contact-form__subject"><label htmlFor="contact-subject">{copy.subject}</label><select id="contact-subject" name="subject" value={subject} onChange={(event) => setSubject(event.target.value)}><option value="general">{copy.subjects.general}</option><option value="file">{copy.subjects.file}</option><option value="transfer">{copy.subjects.transfer}</option></select></div>
-                  <div className="form-field contact-form__message"><label htmlFor="contact-message">{copy.message}</label><textarea id="contact-message" name="message" required /></div>
-                </>
-              )}
+          <form className="booking-form contact-form" onSubmit={submitContact} aria-busy={submissionState === "sending"}>
+            <div className="booking-form__row">
+              <div className="form-field"><label htmlFor="contact-name">{copy.fullName}</label><input id="contact-name" name="name" required autoComplete="name" /></div>
+              <div className="form-field"><label htmlFor="contact-email">{copy.email}</label><input id="contact-email" name="email" type="email" required autoComplete="email" /></div>
             </div>
-            <div className="contact-form__submit">
-              <button type="submit" className="button-link button-link--green" disabled={submissionState === "sending" || formConfig?.enabled === false}>{submissionState === "sending" ? copy.sending : configuredSubmitLabel || copy.send}<span aria-hidden="true">→</span></button>
-              <p role="status" aria-live="polite">{submissionState === "idle" ? configuredDescription || copy.response : copy[submissionState]}</p>
-            </div>
+            <div className="form-field"><label htmlFor="contact-message">{copy.message}</label><textarea id="contact-message" name="message" required /></div>
+            <button type="submit" className="booking-form__button" disabled={submissionState === "sending" || formConfig?.enabled === false}>{submissionState === "sending" ? copy.sending : configuredSubmitLabel || copy.send}</button>
+            {submissionState !== "idle" && <p className="form-status" role="status" aria-live="polite">{copy[submissionState]}</p>}
           </form>
 
         </div>

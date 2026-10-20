@@ -4793,3 +4793,135 @@ textarea {
   background: #887044;
   color: #fff;
 }
+
+/* ==== Formulaires de la frame 8 (réservation + contact) ==== */
+.booking-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.booking-form__step {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.booking-form__step[hidden] {
+  display: none;
+}
+
+.booking-form__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 24px;
+}
+
+.booking-form .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.booking-form .form-field label,
+.booking-form__slot legend {
+  color: #1a1a1a;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.booking-form input:not([type="checkbox"]),
+.booking-form select,
+.booking-form textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 14px;
+  border: 1px solid #b9b5ad;
+  border-radius: 4px;
+  background: #fbfaf5;
+  color: #1a1a1a;
+  font: inherit;
+  font-size: 15px;
+}
+
+.booking-form textarea {
+  min-height: 150px;
+  resize: vertical;
+}
+
+.booking-form__slot {
+  margin: 0;
+  padding: 16px 18px 20px;
+  border: 1px solid #b9b5ad;
+  border-radius: 4px;
+  background: #fbfaf5;
+}
+
+.booking-form__slot legend {
+  padding: 0 6px;
+}
+
+.booking-form__slot input,
+.booking-form__slot select {
+  background: #fff;
+}
+
+.booking-form__button {
+  align-self: flex-start;
+  min-width: 200px;
+  min-height: 46px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 4px;
+  background: #887044;
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.booking-form__button:hover {
+  background: #74603a;
+}
+
+.booking-form__button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.booking-form__actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.booking-form__back {
+  border: 0;
+  background: none;
+  color: #806838;
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.booking-form .appointment-consent {
+  font-size: 13px;
+}
+
+.appointment-page .contact-layout--form {
+  padding-bottom: 80px;
+}
+
+@media (max-width: 640px) {
+  .booking-form__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .booking-form__button {
+    align-self: stretch;
+  }
+}
