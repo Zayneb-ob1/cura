@@ -55,7 +55,7 @@ export function SiteFooter() {
 
   return (
     <footer className="cura-footer">
-      <span className="cura-footer__watermark" aria-hidden="true">CURA</span>
+      <Image className="cura-footer__watermark" src="/brand/cura-wordmark.webp" alt="" width={820} height={249} sizes="90vw" aria-hidden="true" />
       <div className="cura-footer__grid">
         <Link className="cura-footer__brand" href="/">
           <Image src="/brand/cura-tooth.png" alt="" width={656} height={784} sizes="44px" />
