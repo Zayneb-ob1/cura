@@ -8,6 +8,7 @@ type PublicReview = {
   id: string;
   name: string;
   quote: string;
+  translation?: string | null;
   rating: number;
   language?: "fr" | "nl";
 };
@@ -66,7 +67,8 @@ export function ReviewsSection({ label, title, messages }: { label: string; titl
         id: review.id,
         rating: review.rating,
         stars: "\u2605".repeat(Math.max(1, Math.min(5, review.rating))),
-        quote: review.quote,
+        // Show the translation when the review was written in the other site language.
+        quote: review.language && review.language !== language && review.translation ? review.translation : review.quote,
         name: review.name,
       }));
   return (

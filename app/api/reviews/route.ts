@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 type ReviewRecord = StoredRecord & {
   name: string;
   quote: string;
+  translation: string | null;
   rating: number;
   language: "fr" | "nl";
   published: boolean;
@@ -23,10 +24,11 @@ export async function GET(request: NextRequest) {
 
     const records = await listPublishedReviews<ReviewRecord>(language ?? undefined);
     const items = records
-      .map(({ id, name, quote, rating, language: reviewLanguage, createdAt, updatedAt }) => ({
+      .map(({ id, name, quote, translation, rating, language: reviewLanguage, createdAt, updatedAt }) => ({
         id,
         name,
         quote,
+        translation: translation || null,
         rating,
         language: reviewLanguage,
         createdAt,

@@ -29,7 +29,7 @@ const fieldColumns: Record<CollectionName, Record<string, string>> = {
     slotTime: "slot_time", durationMin: "duration_min", proposedDay: "proposed_day", proposedTime: "proposed_time",
   },
   reviews: {
-    name: "name", quote: "quote", rating: "rating", language: "language", published: "published",
+    name: "name", quote: "quote", translation: "quote_translation", rating: "rating", language: "language", published: "published",
   },
   doctors: {
     initials: "initials", nameFr: "name_fr", nameNl: "name_nl", roleFr: "role_fr", roleNl: "role_nl",

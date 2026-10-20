@@ -73,7 +73,7 @@ function hasOwn(input: JsonObject, field: string) {
 const supportedRecordFields: Record<CollectionName, readonly string[]> = {
   contacts: ["name", "email", "phone", "subject", "message", "language", "status"],
   appointments: ["firstName", "lastName", "email", "phone", "care", "day", "time", "note", "consent", "language", "status"],
-  reviews: ["name", "quote", "rating", "language", "published"],
+  reviews: ["name", "quote", "translation", "rating", "language", "published"],
   doctors: ["initials", "nameFr", "nameNl", "roleFr", "roleNl", "bioFr", "bioNl", "order", "published"],
 };
 
@@ -194,6 +194,7 @@ function normalizeReview(input: JsonObject, creating: boolean) {
   const result: JsonObject = {};
   addDefined(result, "name", stringValue(input, "name", { required: creating, max: 160 }));
   addDefined(result, "quote", stringValue(input, "quote", { required: creating, max: 2_000 }));
+  addDefined(result, "translation", stringValue(input, "translation", { max: 2_000 }));
 
   if (hasOwn(input, "rating")) {
     if (typeof input.rating !== "number" || !Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) {
