@@ -28,8 +28,8 @@ const defaultSettings: EditableClinicSettings = {
   email: clinicConfig.email || "contact@curadental.be",
   scheduleFr: clinicConfig.schedule.fr || "Lun–Ven 9h00–17h00",
   scheduleNl: clinicConfig.schedule.nl || "Ma–Vr 9u00–17u00",
-  emergencyFr: clinicConfig.emergency.fr || "Urgences : appelez avant 10h",
-  emergencyNl: clinicConfig.emergency.nl || "Spoed: bel vóór 10u",
+  emergencyFr: clinicConfig.emergency.fr || "",
+  emergencyNl: clinicConfig.emergency.nl || "",
 };
 
 function textValue(value: unknown, name: string, maximum: number) {
