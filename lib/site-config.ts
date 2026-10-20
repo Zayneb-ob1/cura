@@ -1,11 +1,11 @@
 const clinicName = process.env.NEXT_PUBLIC_CLINIC_NAME?.trim() || "CURA Tandarts Praktijk";
-const addressLine1 = process.env.NEXT_PUBLIC_CLINIC_ADDRESS_LINE_1?.trim() || "";
-const postalCity = process.env.NEXT_PUBLIC_CLINIC_POSTAL_CITY?.trim() || "";
-const city = process.env.NEXT_PUBLIC_CLINIC_CITY?.trim() || "";
+const addressLine1 = process.env.NEXT_PUBLIC_CLINIC_ADDRESS_LINE_1?.trim() || "Kuringersteenweg 511";
+const postalCity = process.env.NEXT_PUBLIC_CLINIC_POSTAL_CITY?.trim() || "3511 Hasselt";
+const city = process.env.NEXT_PUBLIC_CLINIC_CITY?.trim() || "Hasselt";
 const phoneDisplay = process.env.NEXT_PUBLIC_CLINIC_PHONE_DISPLAY?.trim() || "";
 const phone = process.env.NEXT_PUBLIC_CLINIC_PHONE?.trim().replace(/^tel:/, "") || "";
 const email = process.env.NEXT_PUBLIC_CLINIC_EMAIL?.trim() || "";
-const mapUrl = process.env.NEXT_PUBLIC_CLINIC_MAP_URL?.trim() || "";
+const mapUrl = process.env.NEXT_PUBLIC_CLINIC_MAP_URL?.trim() || "https://www.google.com/maps/search/?api=1&query=Kuringersteenweg+511%2C+3511+Hasselt%2C+Belgique";
 const scheduleFr = process.env.NEXT_PUBLIC_CLINIC_SCHEDULE_FR?.trim() || "";
 const scheduleNl = process.env.NEXT_PUBLIC_CLINIC_SCHEDULE_NL?.trim() || "";
 const emergencyFr = process.env.NEXT_PUBLIC_CLINIC_EMERGENCY_FR?.trim() || "";
@@ -20,13 +20,14 @@ const configuredHours = (process.env.NEXT_PUBLIC_CLINIC_HOURS || "")
   .split("|")
   .map((value) => value.trim())
   .filter(Boolean);
+// Monday to Friday, 9:00–17:00 (confirmed by the practice).
 const defaultHours = [
-  "08:30–18:00",
-  "08:30–18:00",
-  "08:30–18:00",
-  "08:30–18:00",
-  "08:30–17:00",
-  "09:00–13:00",
+  "09:00–17:00",
+  "09:00–17:00",
+  "09:00–17:00",
+  "09:00–17:00",
+  "09:00–17:00",
+  "closed",
   "closed",
 ];
 

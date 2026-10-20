@@ -4774,3 +4774,15 @@ textarea {
 .cura-footer__watermark {
   bottom: 24px;
 }
+
+.info-cards .info-cards__upper {
+  text-transform: uppercase;
+}
+
+.info-cards article {
+  gap: 18px;
+}
+
+.info-cards p {
+  font-size: 14px;
+}

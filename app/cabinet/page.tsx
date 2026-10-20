@@ -26,7 +26,11 @@ const pageCopy = {
     call: "Téléphonez-nous",
     write: "Écrivez-nous",
     schedulePending: "Horaires à confirmer",
-    practicalCopy: "Avec ou sans rendez-vous préalable.",
+    practicalCopy: "Avec ou sans rendez-vous préalable",
+    access: "Situé au rez-de-chaussée, entrée accessible",
+    parking: "Parking gratuit disponible sur place",
+    country: "Belgique",
+    hours: "Lundi au vendredi de 9h à 17h",
     valuesLabel: "Nos engagements",
     valuesTitle: "Nos valeurs",
     values: ["Le patient avant tout", "Des praticiens passionnés et compétents", "Des technologies performantes", "Le respect de la déontologie"],
@@ -55,7 +59,11 @@ const pageCopy = {
     call: "Bel ons",
     write: "Schrijf ons",
     schedulePending: "Openingsuren te bevestigen",
-    practicalCopy: "Met of zonder voorafgaande afspraak.",
+    practicalCopy: "Met of zonder voorafgaande afspraak",
+    access: "Op het gelijkvloers, toegankelijke ingang",
+    parking: "Gratis parking ter plaatse",
+    country: "België",
+    hours: "Maandag tot vrijdag van 9u tot 17u",
     valuesLabel: "Onze engagementen",
     valuesTitle: "Onze waarden",
     values: ["De patiënt staat voorop", "Gedreven en deskundige tandartsen", "Performante technologie", "Respect voor de deontologie"],
@@ -98,13 +106,15 @@ export default function CabinetPage() {
             <div className="info-cards">
               <article>
                 <h3>{copy.addressCard}</h3>
-                <p>{clinicConfig.hasAddress ? <>{clinicConfig.addressLine1}<br />{clinicConfig.postalCity}</> : copy.pending}</p>
+                <p className="info-cards__upper">{clinicConfig.hasAddress ? <>{clinicConfig.addressLine1}<br />{clinicConfig.postalCity}, {copy.country}</> : copy.pending}</p>
+                <p>{copy.access}</p>
                 {clinicConfig.mapUrl && <a className="info-cards__button" href={clinicConfig.mapUrl} target="_blank" rel="noreferrer">{copy.directions}</a>}
               </article>
               <article>
                 <h3>{copy.contactCard}</h3>
                 <p>
-                  {clinicConfig.schedule[language] || copy.schedulePending}
+                  <span className="info-cards__upper">{copy.hours}</span>
+                  <br />
                   <br />
                   {clinicConfig.hasPhone ? <a href={`tel:${clinicConfig.phone}`}>{clinicConfig.phoneDisplay}</a> : copy.pending}
                   {clinicConfig.email && <><br /><a href={`mailto:${clinicConfig.email}`}>{clinicConfig.email}</a></>}
@@ -115,6 +125,7 @@ export default function CabinetPage() {
               </article>
               <article>
                 <h3>{copy.practicalCard}</h3>
+                <p className="info-cards__upper">{copy.parking}</p>
                 <p>{copy.practicalCopy}</p>
                 <a className="info-cards__button" href="/rendez-vous">{copy.appointment}</a>
               </article>
