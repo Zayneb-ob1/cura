@@ -61,7 +61,7 @@ export function ReviewsSection({ label, title, messages }: { label: string; titl
     };
   }, [language]);
 
-  const visibleReviews = (managedReviews ?? [])
+  const visibleReviews = (managedReviews ?? []).slice(0, 6)
     .map((review) => ({
         id: review.id,
         rating: review.rating,
@@ -83,6 +83,9 @@ export function ReviewsSection({ label, title, messages }: { label: string; titl
             {visibleReviews.map((review) => <article key={review.id}><span className="home-reviews__stars" aria-label={`${review.rating} / 5`}>{review.stars}</span><blockquote>{review.quote}</blockquote><p>{review.name}</p></article>)}
           </div>
         ) : <p>{messages.noReviews}</p>}
+        {reviewsState === "ready" && visibleReviews.length > 0 ? (
+          <p className="home-reviews__source">{language === "nl" ? "Geverifieerde beoordelingen van onze patiënten op Doctoranytime." : "Avis vérifiés de nos patients sur Doctoranytime."}</p>
+        ) : null}
       </div>
     </section>
   );
