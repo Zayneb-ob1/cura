@@ -11,7 +11,6 @@ const headerCopy = {
   fr: {
     schedulePending: "Horaires à confirmer",
     contactPending: "Coordonnées à confirmer",
-    emergencyPending: "Urgences : informations à confirmer",
     languageLabel: "Langue",
     navigationLabel: "Navigation principale",
     homeLabel: "Accueil",
@@ -28,7 +27,6 @@ const headerCopy = {
   nl: {
     schedulePending: "Openingsuren te bevestigen",
     contactPending: "Contactgegevens te bevestigen",
-    emergencyPending: "Spoed: informatie te bevestigen",
     languageLabel: "Taal",
     navigationLabel: "Hoofdnavigatie",
     homeLabel: "Startpagina",
@@ -47,7 +45,6 @@ const headerCopy = {
   {
     schedulePending: string;
     contactPending: string;
-    emergencyPending: string;
     languageLabel: string;
     navigationLabel: string;
     homeLabel: string;
@@ -98,9 +95,6 @@ export function SiteHeader() {
                 ? <a href={`tel:${clinicConfig.phone}`}>{clinicConfig.phoneDisplay}</a>
                 : copy.contactPending}
             </span>
-            {clinicConfig.hasPhone && clinicConfig.emergency[language]
-              ? <a className="utility-details__urgent" href={`tel:${clinicConfig.phone}`}>{clinicConfig.emergency[language]}</a>
-              : <span className="utility-details__urgent">{copy.emergencyPending}</span>}
           </div>
           <div className="utility-languages" aria-label={copy.languageLabel} role="group">
             <span className={language === "fr" ? "utility-languages__active" : undefined}>

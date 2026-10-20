@@ -4,7 +4,6 @@ import { absoluteUrl, HAS_PUBLIC_SITE_URL, languageUrl, publicRoutes } from "@/l
 const priorities: Record<(typeof publicRoutes)[number], number> = {
   "/": 1,
   "/soins": 0.9,
-  "/urgences": 0.8,
   "/cabinet": 0.8,
   "/tarifs": 0.7,
   "/nouveau-patient": 0.8,

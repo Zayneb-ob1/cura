@@ -37,7 +37,6 @@ export const SITE_URL = deploymentUrl ?? new URL("http://localhost:3000");
 export const publicRoutes = [
   "/",
   "/soins",
-  "/urgences",
   "/cabinet",
   "/tarifs",
   "/nouveau-patient",

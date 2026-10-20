@@ -20,10 +20,6 @@ const pageCopy = {
     reasonsTitle: "Pour quelles raisons prendre rendez-vous ?",
     reasonsIntro: "Chez Cura, nous proposons une prise en charge personnalisée pour préserver votre santé bucco-dentaire et sublimer votre sourire.",
     reasons: ["Soins dentaires courants : consultations, détartrage, extractions et endodontie.", "Esthétique du sourire : blanchiment et facettes dentaires.", "Orthodontie et prothèses : appareils, gouttières et couronnes.", "Implantologie : implants dentaires et soins gingivaux.", "Bilans spécialisés : bilans parodontaux et orthodontiques.", "Suivi et deuxième avis : évaluation et conseils personnalisés."],
-    alsoTitle: "Vous pouvez également prendre rendez-vous pour",
-    also: ["Traumatisme dentaire", "Douleur et rage de dents", "Hémorragie dentaire"],
-    alsoCopy: "Nous mettons tout en œuvre pour vous recevoir dans la journée et procéder aux premiers soins indispensables pour soulager la douleur et préserver votre capital dentaire.",
-    urgent: "Voir la page urgences",
     ctaTitle: <>Pour une évaluation personnalisée<br />et un devis sur-mesure</>, ctaCopy: "Réservez en ligne en deux minutes. Vous recevez une confirmation sous 24 h.", ctaButton: "Prendre rendez-vous",
     label: "Prendre rendez-vous", title: "Réservez votre place en deux minutes.", intro: "Choisissez le motif, donnez-nous vos coordonnées et indiquez vos disponibilités. Nous confirmons sous 24 h.",
     appointment: "Le rendez-vous", care: "Soin demandé", unknown: "Je ne sais pas encore", day: "Jour préféré", time: "Moment", morning: "Matin", afternoon: "Après-midi", any: "Sans préférence",
@@ -40,10 +36,6 @@ const pageCopy = {
     reasonsTitle: "Waarvoor kunt u een afspraak maken?",
     reasonsIntro: "Bij Cura bieden we persoonlijke zorg om uw mondgezondheid te bewaren en uw glimlach te verfraaien.",
     reasons: ["Dagelijkse tandzorg: consultaties, tandsteenverwijdering, extracties en endodontie.", "Esthetiek van de glimlach: bleken en facetten.", "Orthodontie en prothesen: beugels, aligners en kronen.", "Implantologie: tandimplantaten en tandvleeszorg.", "Gespecialiseerde onderzoeken: parodontale en orthodontische bilans.", "Opvolging en tweede advies: beoordeling en persoonlijk advies."],
-    alsoTitle: "U kunt ook een afspraak maken voor",
-    also: ["Tandtrauma", "Pijn en hevige tandpijn", "Bloeding in de mond"],
-    alsoCopy: "We doen er alles aan om u dezelfde dag te ontvangen en de eerste zorg te geven om de pijn te verlichten en uw tanden te bewaren.",
-    urgent: "Naar de spoedpagina",
     ctaTitle: <>Voor een persoonlijke beoordeling<br />en een offerte op maat</>, ctaCopy: "Boek online in twee minuten. U ontvangt binnen 24 uur een bevestiging.", ctaButton: "Maak een afspraak",
     label: "Maak een afspraak", title: "Reserveer uw afspraak in twee minuten.", intro: "Kies de reden, vul uw gegevens in en geef aan wanneer u beschikbaar bent. We bevestigen binnen 24 uur.",
     appointment: "De afspraak", care: "Gewenste behandeling", unknown: "Ik weet het nog niet", day: "Voorkeursdag", time: "Moment", morning: "Voormiddag", afternoon: "Namiddag", any: "Geen voorkeur",
@@ -267,10 +259,6 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
           <article className="info-row">
             <h2>{copy.reasonsTitle}</h2>
             <div><p>{copy.reasonsIntro}</p><ul>{copy.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></div>
-          </article>
-          <article className="info-row">
-            <h2>{copy.alsoTitle}</h2>
-            <div><ul>{copy.also.map((item) => <li key={item}>{item}</li>)}</ul><p>{copy.alsoCopy}</p><a className="info-row__link" href="/urgences">{copy.urgent} →</a></div>
           </article>
         </div>
       </section>
