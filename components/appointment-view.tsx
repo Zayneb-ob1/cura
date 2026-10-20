@@ -223,6 +223,8 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
         </div>
       </section>
 
+      {/* The contact page keeps only the contact form; booking lives on /rendez-vous. */}
+      {!withContactForm && (
       <section className="content-shell appointment-layout" id="reserver">
         <h2 className="appointment-layout__title">{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || copy.bookNow}</h2>
         <form className="booking-form" onSubmit={submitAppointment} aria-busy={submissionState === "sending"} ref={formRef}>
@@ -253,6 +255,7 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
           {submissionState !== "idle" && <p className="form-status" role="status" aria-live="polite">{copy[submissionState]}</p>}
         </form>
       </section>
+      )}
 
       <section className="info-rows info-rows--paper">
         <div className="content-shell">
@@ -265,7 +268,7 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
 
       {withContactForm && <ContactFormSection />}
 
-      <PageCta title={copy.ctaTitle} text={copy.ctaCopy} action={{ href: "#reserver", label: copy.ctaButton }} />
+      <PageCta title={copy.ctaTitle} text={copy.ctaCopy} action={{ href: withContactForm ? "/rendez-vous" : "#reserver", label: copy.ctaButton }} />
       </main>
       <SiteFooter />
     </div>
