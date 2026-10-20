@@ -1,121 +1,156 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
+import { PageCta, PageHero } from "@/components/page-hero";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { useSiteSettings } from "@/components/site-settings-provider";
+import { ValueIcon } from "@/components/value-icons";
 
+// Layout of Figma frame 7: hero, team + 3 info cards, values, reasons to book, closing call to action.
 const pageCopy = {
   fr: {
-    label: "Le cabinet",
-    title: "Une équipe, une adresse, et le temps d’écouter.",
-    intro: "Découvrez l’équipe du cabinet et les domaines de soins présentés sur ce site.",
-    teamLoading: "Chargement de l’équipe…",
-    teamError: "L’équipe ne peut pas être chargée pour le moment.",
-    noTeam: "Aucun profil d’équipe vérifié n’est publié pour le moment.",
-    equipment: "Équipement",
-    equipmentTitle: "Une technique qui raccourcit la visite, pas la facture.",
-    equipmentItems: ["Radiographie panoramique numérique", "Caméra intra-orale — vous voyez ce que nous voyons", "Détartrage à ultrasons", "Endodontie rotative pour des traitements de canal plus courts", "Stérilisation autoclave classe B, tracée"],
-    practice: "Pratique",
-    practiceTitle: "Préparer votre visite",
-    practiceItems: [["À apporter", "Carte d’identité"], ["Médicaments", "Liste ou boîtes"], ["Anciennes radios", "Si disponibles"], ["Paiement", "Bancontact, espèces"], ["Annulation", "24 h à l’avance"]],
+    heroTitle: "CLINIQUE DENTAIRE CURA",
+    heroIn: "À",
+    heroCopy: "Vous souhaitez recevoir des informations complémentaires ou nous poser des questions ? N’hésitez pas à nous contacter par téléphone.",
+    appointment: "Prendre rendez-vous",
+    teamLabel: "La clinique",
+    teamTitle: "Une équipe à votre écoute !",
+    teamCopy: "Vous souhaitez avoir plus de renseignements ou prendre un rendez-vous ? Posez votre question à l’équipe de Cura, n’hésitez pas à nous contacter.",
+    addressCard: "Adresse du cabinet",
+    contactCard: "Nous contacter",
+    practicalCard: "Infos pratiques",
+    pending: "À confirmer",
+    directions: "Voir votre itinéraire",
+    call: "Téléphonez-nous",
+    write: "Écrivez-nous",
+    schedulePending: "Horaires à confirmer",
+    practicalCopy: "Avec ou sans rendez-vous préalable.",
+    valuesLabel: "Nos engagements",
+    valuesTitle: "Nos valeurs",
+    values: ["Le patient avant tout", "Des praticiens passionnés et compétents", "Des technologies performantes", "Le respect de la déontologie"],
+    reasonsTitle: "Pour quelles raisons prendre rendez-vous ?",
+    reasonsIntro: "Chez Cura, nous proposons une prise en charge personnalisée pour préserver votre santé bucco-dentaire et sublimer votre sourire.",
+    reasons: ["Soins dentaires courants : consultations, détartrage, extractions et endodontie.", "Esthétique du sourire : blanchiment et facettes dentaires.", "Orthodontie et prothèses : appareils, gouttières et couronnes.", "Implantologie : implants dentaires et soins gingivaux.", "Bilans spécialisés : bilans parodontaux et orthodontiques.", "Suivi et deuxième avis : évaluation et conseils personnalisés."],
+    alsoTitle: "Vous pouvez également prendre rendez-vous pour",
+    also: ["Traumatisme dentaire", "Douleur et rage de dents", "Hémorragie dentaire"],
+    alsoCopy: "Nous mettons tout en œuvre pour vous recevoir dans la journée et procéder aux premiers soins indispensables pour soulager la douleur et préserver votre capital dentaire.",
+    ctaTitle: "Nous sommes prêts quand vous l’êtes.",
+    ctaCopy: "Réservez en ligne en deux minutes. Vous recevez une confirmation sous 24 h.",
   },
   nl: {
-    label: "De praktijk",
-    title: "Eén team, één adres en tijd om te luisteren.",
-    intro: "Ontdek het team van de praktijk en de zorggebieden die op deze website worden voorgesteld.",
-    teamLoading: "Team laden…",
-    teamError: "Het team kan momenteel niet worden geladen.",
-    noTeam: "Er is momenteel geen geverifieerd teamprofiel gepubliceerd.",
-    equipment: "Uitrusting",
-    equipmentTitle: "Techniek die het bezoek verkort, niet de rekening.",
-    equipmentItems: ["Digitale panoramische radiografie", "Intra-orale camera — u ziet wat wij zien", "Ultrasone tandsteenverwijdering", "Roterende endodontie voor kortere wortelkanaalbehandelingen", "Traceerbare klasse B-autoclaafsterilisatie"],
-    practice: "Praktisch",
-    practiceTitle: "Bereid uw bezoek voor",
-    practiceItems: [["Mee te brengen", "Identiteitskaart"], ["Medicatie", "Lijst of doosjes"], ["Oude röntgenfoto’s", "Indien beschikbaar"], ["Betaling", "Bancontact, contant"], ["Annulering", "24 uur vooraf"]],
+    heroTitle: "TANDHEELKUNDIGE KLINIEK CURA",
+    heroIn: "IN",
+    heroCopy: "Wenst u meer informatie of heeft u een vraag? Aarzel niet om ons telefonisch te contacteren.",
+    appointment: "Maak een afspraak",
+    teamLabel: "De kliniek",
+    teamTitle: "Een team dat naar u luistert!",
+    teamCopy: "Wenst u meer informatie of wilt u een afspraak maken? Stel uw vraag aan het Cura-team, wij helpen u graag verder.",
+    addressCard: "Adres van de praktijk",
+    contactCard: "Contacteer ons",
+    practicalCard: "Praktische info",
+    pending: "Te bevestigen",
+    directions: "Bekijk uw route",
+    call: "Bel ons",
+    write: "Schrijf ons",
+    schedulePending: "Openingsuren te bevestigen",
+    practicalCopy: "Met of zonder voorafgaande afspraak.",
+    valuesLabel: "Onze engagementen",
+    valuesTitle: "Onze waarden",
+    values: ["De patiënt staat voorop", "Gedreven en deskundige tandartsen", "Performante technologie", "Respect voor de deontologie"],
+    reasonsTitle: "Waarvoor kunt u een afspraak maken?",
+    reasonsIntro: "Bij Cura bieden we persoonlijke zorg om uw mondgezondheid te bewaren en uw glimlach te verfraaien.",
+    reasons: ["Dagelijkse tandzorg: consultaties, tandsteenverwijdering, extracties en endodontie.", "Esthetiek van de glimlach: bleken en facetten.", "Orthodontie en prothesen: beugels, aligners en kronen.", "Implantologie: tandimplantaten en tandvleeszorg.", "Gespecialiseerde onderzoeken: parodontale en orthodontische bilans.", "Opvolging en tweede advies: beoordeling en persoonlijk advies."],
+    alsoTitle: "U kunt ook een afspraak maken voor",
+    also: ["Tandtrauma", "Pijn en hevige tandpijn", "Bloeding in de mond"],
+    alsoCopy: "We doen er alles aan om u dezelfde dag te ontvangen en de eerste zorg te geven om de pijn te verlichten en uw tanden te bewaren.",
+    ctaTitle: "Wij staan klaar wanneer u dat bent.",
+    ctaCopy: "Boek online in twee minuten. U ontvangt binnen 24 uur een bevestiging.",
   },
 } as const;
 
-type Doctor = {
-  id: string;
-  initials: string;
-  nameFr: string;
-  nameNl: string;
-  roleFr: string;
-  roleNl: string;
-  bioFr: string;
-  bioNl: string;
-};
-
 export default function CabinetPage() {
   const { language } = useLanguage();
+  const clinicConfig = useSiteSettings();
   const copy = pageCopy[language];
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [teamState, setTeamState] = useState<"loading" | "ready" | "error">("loading");
-
-  useEffect(() => {
-    let active = true;
-    const controller = new AbortController();
-    fetch("/api/doctors", { cache: "no-store", signal: controller.signal })
-      .then((response) => response.ok ? response.json() as Promise<{ items?: Doctor[] }> : Promise.reject())
-      .then((payload) => {
-        if (active && Array.isArray(payload.items)) {
-          setDoctors(payload.items);
-          setTeamState("ready");
-        }
-      })
-      .catch(() => {
-        if (active && !controller.signal.aborted) setTeamState("error");
-      });
-    return () => {
-      active = false;
-      controller.abort();
-    };
-  }, []);
-
-  const team = doctors.map((doctor) => [
-    doctor.initials,
-    language === "fr" ? doctor.nameFr : doctor.nameNl,
-    language === "fr" ? doctor.roleFr : doctor.roleNl,
-    language === "fr" ? doctor.bioFr : doctor.bioNl,
-  ]);
 
   return (
-    <div className="cabinet-page page-paper">
+    <div className="cabinet-page">
       <SiteHeader />
       <main>
-      <section className="content-shell cabinet-page__intro" id="main-content" tabIndex={-1}>
-        <SectionLabel>{copy.label}</SectionLabel>
-        <h1 className="editorial-title">{copy.title}</h1>
-        <p>{copy.intro}</p>
-        {teamState === "loading" ? <p role="status" aria-live="polite">{copy.teamLoading}</p>
-          : teamState === "error" ? <p role="alert">{copy.teamError}</p>
-          : team.length === 0 ? <p>{copy.noTeam}</p>
-          : <div className="team-grid">
-          {team.map(([initials, name, role, text], index) => (
-            <article key={`${name}-${index}`}><strong>{initials}</strong><h2>{name}</h2><span>{role}</span><p>{text}</p></article>
-          ))}
-        </div>}
-      </section>
-      <section className="content-shell cabinet-equipment">
-        <div>
-          <SectionLabel>{copy.equipment}</SectionLabel>
-          <h2 className="editorial-title">{copy.equipmentTitle}</h2>
-          <ul>{copy.equipmentItems.map((item) => <li key={item}>{item}</li>)}</ul>
-        </div>
-        <aside className="cabinet-practice">
-          <div>
-            <SectionLabel>{copy.practice}</SectionLabel>
-            <h3>{copy.practiceTitle}</h3>
-            <dl>
-              {copy.practiceItems.map(([label, value]) => (
-                <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
-              ))}
-            </dl>
+        <PageHero
+          title={copy.heroTitle}
+          accent={clinicConfig.city ? `${copy.heroIn} ${clinicConfig.city.toUpperCase()}` : undefined}
+          text={copy.heroCopy}
+          action={{ href: "/rendez-vous", label: copy.appointment }}
+        />
+
+        <section className="contact-team">
+          <div className="content-shell">
+            <div className="split-intro">
+              <div>
+                <SectionLabel>{copy.teamLabel}</SectionLabel>
+                <h2>{copy.teamTitle}</h2>
+              </div>
+              <p>{copy.teamCopy}</p>
+            </div>
+            <div className="info-cards">
+              <article>
+                <h3>{copy.addressCard}</h3>
+                <p>{clinicConfig.hasAddress ? <>{clinicConfig.addressLine1}<br />{clinicConfig.postalCity}</> : copy.pending}</p>
+                {clinicConfig.mapUrl && <a className="info-cards__button" href={clinicConfig.mapUrl} target="_blank" rel="noreferrer">{copy.directions}</a>}
+              </article>
+              <article>
+                <h3>{copy.contactCard}</h3>
+                <p>
+                  {clinicConfig.schedule[language] || copy.schedulePending}
+                  <br />
+                  {clinicConfig.hasPhone ? <a href={`tel:${clinicConfig.phone}`}>{clinicConfig.phoneDisplay}</a> : copy.pending}
+                  {clinicConfig.email && <><br /><a href={`mailto:${clinicConfig.email}`}>{clinicConfig.email}</a></>}
+                </p>
+                {clinicConfig.hasPhone
+                  ? <a className="info-cards__button" href={`tel:${clinicConfig.phone}`}>{copy.call}</a>
+                  : <a className="info-cards__button" href="/contact">{copy.write}</a>}
+              </article>
+              <article>
+                <h3>{copy.practicalCard}</h3>
+                <p>{copy.practicalCopy}</p>
+                <a className="info-cards__button" href="/rendez-vous">{copy.appointment}</a>
+              </article>
+            </div>
           </div>
-        </aside>
-      </section>
+        </section>
+
+        <section className="home-values">
+          <div className="content-shell">
+            <SectionLabel>{copy.valuesLabel}</SectionLabel>
+            <h2>{copy.valuesTitle}</h2>
+            <ul className="home-values__grid">
+              {copy.values.map((value, index) => (
+                <li key={value}>
+                  <ValueIcon index={index} />
+                  <span>{value}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section className="info-rows info-rows--paper">
+          <div className="content-shell">
+            <article className="info-row">
+              <h2>{copy.reasonsTitle}</h2>
+              <div><p>{copy.reasonsIntro}</p><ul>{copy.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></div>
+            </article>
+            <article className="info-row">
+              <h2>{copy.alsoTitle}</h2>
+              <div><ul>{copy.also.map((item) => <li key={item}>{item}</li>)}</ul><p>{copy.alsoCopy}</p></div>
+            </article>
+          </div>
+        </section>
+
+        <PageCta title={copy.ctaTitle} text={copy.ctaCopy} action={{ href: "/rendez-vous", label: copy.appointment }} />
       </main>
       <SiteFooter />
     </div>

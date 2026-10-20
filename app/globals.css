@@ -4756,3 +4756,21 @@ textarea {
   color: #0b0c0b;
   font-weight: 700;
 }
+
+.cabinet-page {
+  background: #fcfbf7;
+}
+
+.cabinet-page main .section-label {
+  color: #806838;
+  font-size: 11px;
+}
+
+/* Pied de page : espace sous le filigrane et la ligne du bas */
+.cura-footer {
+  padding-bottom: 72px;
+}
+
+.cura-footer__watermark {
+  bottom: 24px;
+}
