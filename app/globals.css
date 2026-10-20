@@ -4603,3 +4603,20 @@ textarea {
     font-size: 12px;
   }
 }
+
+/* Icônes des valeurs : même hauteur pour toutes */
+.home-values .value-icon {
+  width: auto;
+  height: 80px;
+}
+
+.home-values .value-icon > img:first-child {
+  width: auto;
+  height: 80px;
+  max-width: none;
+}
+
+.home-values__grid li:first-child .value-icon > img:first-child {
+  height: 68px;
+  margin-top: 12px;
+}
