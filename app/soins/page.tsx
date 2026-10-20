@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
 import { PageCta, PageHero } from "@/components/page-hero";
@@ -28,8 +28,8 @@ const pageCopy = {
       ["orthodontie", "Orthodontie", "L’orthodontie corrige l’alignement des dents et les problèmes d’occlusion afin d’améliorer l’équilibre du sourire et le confort au quotidien."],
     ],
     info: [
-      ["Pourquoi prendre soin de sa santé bucco-dentaire ?", "Prendre soin de ses dents permet de prévenir les problèmes bucco-dentaires, de préserver la santé des gencives et de maintenir un sourire sain et harmonieux. Chez Cura, nous vous accompagnons à chaque étape grâce à une prise en charge adaptée à vos besoins, qu’il s’agisse de prévention, de soins thérapeutiques ou d’amélioration esthétique du sourire."],
-      ["Les soins dentaires chez Cura", "Nous proposons une approche personnalisée pour répondre aux besoins de chaque patient. Nos soins incluent la dentisterie générale, la parodontologie, l’implantologie, l’orthodontie, l’esthétique dentaire et l’endodontie. Chaque traitement débute par une consultation permettant d’évaluer votre santé bucco-dentaire et de définir les solutions les plus adaptées à votre situation."],
+      ["Pourquoi prendre soin de sa santé bucco-dentaire ?", "Prendre soin de ses dents permet de prévenir les problèmes bucco-dentaires, de préserver la santé des gencives et de maintenir un sourire sain et harmonieux.\nChez Cura, nous vous accompagnons à chaque étape grâce à une **prise en charge adaptée à vos besoins**, qu’il s’agisse de prévention, de soins thérapeutiques ou d’amélioration esthétique du sourire."],
+      ["Les soins dentaires chez Cura", "Nous proposons une approche personnalisée pour répondre aux besoins de chaque patient. Nos soins incluent la **dentisterie générale**, la **parodontologie**, l’**implantologie**, l’**orthodontie**, l’**esthétique dentaire** et l’**endodontie**.\nChaque traitement débute par une consultation permettant d’évaluer votre santé bucco-dentaire et de définir **les solutions les plus adaptées à votre situation**."],
       ["Les tarifs des soins dentaires ?", "Les tarifs varient selon la nature du traitement et les soins nécessaires. Un devis personnalisé vous sera proposé après votre consultation, afin de vous informer clairement sur les différentes étapes et leur coût."],
     ],
     ctaTitle: <>Pour une évaluation personnalisée<br />et un devis sur-mesure</>,
@@ -54,14 +54,24 @@ const pageCopy = {
       ["orthodontie", "Orthodontie", "Orthodontie corrigeert de stand van de tanden en de beet, voor een evenwichtige glimlach en meer comfort in het dagelijks leven."],
     ],
     info: [
-      ["Waarom zorgen voor uw mondgezondheid?", "Goed zorgen voor uw tanden voorkomt mondproblemen, beschermt uw tandvlees en houdt uw glimlach gezond en harmonieus. Bij Cura begeleiden we u bij elke stap met zorg op maat, of het nu gaat om preventie, behandeling of een mooiere glimlach."],
-      ["De tandzorg bij Cura", "We kiezen voor een persoonlijke aanpak die aansluit bij de noden van elke patiënt. Onze zorg omvat algemene tandheelkunde, parodontologie, implantologie, orthodontie, esthetische tandheelkunde en endodontie. Elke behandeling start met een consultatie om uw mondgezondheid te beoordelen en de meest geschikte oplossingen te bepalen."],
+      ["Waarom zorgen voor uw mondgezondheid?", "Goed zorgen voor uw tanden voorkomt mondproblemen, beschermt uw tandvlees en houdt uw glimlach gezond en harmonieus.\nBij Cura begeleiden we u bij elke stap met **zorg op maat**, of het nu gaat om preventie, behandeling of een mooiere glimlach."],
+      ["De tandzorg bij Cura", "We kiezen voor een persoonlijke aanpak die aansluit bij de noden van elke patiënt. Onze zorg omvat **algemene tandheelkunde**, **parodontologie**, **implantologie**, **orthodontie**, **esthetische tandheelkunde** en **endodontie**.\nElke behandeling start met een consultatie om uw mondgezondheid te beoordelen en **de meest geschikte oplossingen** te bepalen."],
       ["Wat kost een tandheelkundige behandeling?", "De tarieven hangen af van de aard van de behandeling en de nodige zorg. Na uw consultatie krijgt u een persoonlijke offerte, zodat u duidelijk weet welke stappen er volgen en wat ze kosten."],
     ],
     ctaTitle: <>Voor een persoonlijke beoordeling<br />en een offerte op maat</>,
     ctaCopy: "Boek online in twee minuten. U ontvangt binnen 24 uur een bevestiging.",
   },
 } as const;
+
+// Renders "**bold**" segments and "\n" line breaks from the copy strings.
+function richText(text: string) {
+  return text.split("\n").map((line, lineIndex) => (
+    <Fragment key={lineIndex}>
+      {lineIndex > 0 && <br />}
+      {line.split("**").map((part, index) => (index % 2 === 1 ? <strong key={index}>{part}</strong> : part))}
+    </Fragment>
+  ));
+}
 
 export default function SoinsPage() {
   const { language } = useLanguage();
@@ -116,7 +126,7 @@ export default function SoinsPage() {
                 <details className="care-act" id={slug} key={slug} open={openAct === slug} onToggle={(event) => setActOpen(slug, event.currentTarget.open)}>
                   <summary>{name}<span aria-hidden="true" /></summary>
                   <div className="care-act__body">
-                    <p>{text}</p>
+                    <p>{richText(text)}</p>
                   </div>
                 </details>
               ))}
@@ -129,7 +139,7 @@ export default function SoinsPage() {
             {copy.info.map(([title, text]) => (
               <article className="info-row" key={title}>
                 <h2>{title}</h2>
-                <p>{text}</p>
+                <p>{richText(text)}</p>
               </article>
             ))}
           </div>

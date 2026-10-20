@@ -4751,3 +4751,8 @@ textarea {
 .care-acts__watermark {
   bottom: -200px;
 }
+
+.info-row strong {
+  color: #0b0c0b;
+  font-weight: 700;
+}
