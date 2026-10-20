@@ -17,7 +17,6 @@ const pageCopy = {
     label: "Nos soins",
     title: "Nos actes",
     subtitle: "Huit soins, de la prévention à la reconstruction.",
-    book: "Prendre rendez-vous pour ce soin",
     acts: [
       ["parodontologie", "Parodontologie", "La parodontologie traite les maladies des gencives et de l’os qui soutient les dents : saignements, déchaussement, mauvaise haleine. Un nettoyage approfondi et un suivi régulier permettent de stabiliser la situation."],
       ["esthetique", "Esthétique dentaire", "L’esthétique dentaire regroupe les soins qui améliorent la teinte, la forme et l’harmonie du sourire, jusqu’aux réhabilitations complètes, toujours dans le respect de la santé des dents."],
@@ -44,7 +43,6 @@ const pageCopy = {
     label: "Onze behandelingen",
     title: "Onze behandelingen",
     subtitle: "Acht behandelingen, van preventie tot herstel.",
-    book: "Een afspraak maken voor deze behandeling",
     acts: [
       ["parodontologie", "Parodontologie", "Parodontologie behandelt aandoeningen van het tandvlees en het bot rond de tanden: bloedend tandvlees, terugtrekkend tandvlees, slechte adem. Een grondige reiniging en regelmatige opvolging stabiliseren de situatie."],
       ["esthetique", "Esthetische tandheelkunde", "Esthetische tandheelkunde verbetert de kleur, vorm en harmonie van uw glimlach, tot volledige rehabilitaties, steeds met respect voor de gezondheid van uw tanden."],
@@ -119,7 +117,6 @@ export default function SoinsPage() {
                   <summary>{name}<span aria-hidden="true" /></summary>
                   <div className="care-act__body">
                     <p>{text}</p>
-                    <a href="/rendez-vous#reserver">{copy.book} →</a>
                   </div>
                 </details>
               ))}

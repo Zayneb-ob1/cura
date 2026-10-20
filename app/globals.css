@@ -4642,3 +4642,108 @@ textarea {
   color: #6f5a30;
   font-size: 15px;
 }
+
+/* Soins : accordéon « Nos actes » au plus près de la maquette */
+.care-acts {
+  position: relative;
+  padding: 40px 0 80px;
+}
+
+.care-acts__intro {
+  position: static;
+}
+
+.care-acts__intro h2 {
+  margin-top: 6px;
+}
+
+.care-acts__watermark {
+  left: 3%;
+  top: auto;
+  bottom: -70px;
+  width: min(30vw, 330px);
+  opacity: 1;
+}
+
+.care-acts__list {
+  max-width: 560px;
+}
+
+.care-act summary {
+  min-height: 0;
+  padding: 7px 34px 7px 0;
+  font-size: clamp(14px, 1.15vw, 16px);
+  letter-spacing: 0.08em;
+}
+
+.care-act summary span {
+  border-left-width: 5px;
+  border-right-width: 5px;
+  border-top-width: 8px;
+}
+
+.care-act[open] {
+  margin-inline: -28px;
+  padding: 4px 28px 14px;
+  background: #f8f6f1;
+}
+
+.care-act__body {
+  padding: 8px 0 4px;
+}
+
+.care-act__body p {
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+@media (max-width: 760px) {
+  .care-acts {
+    padding: 36px 0 48px;
+  }
+
+  .care-act summary {
+    min-height: 48px;
+    font-size: 15px;
+  }
+
+  .care-act[open] {
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+
+  .care-act__body p {
+    font-size: 14px;
+  }
+}
+
+.care-act summary {
+  padding: 13px 40px 13px 0;
+  font-size: clamp(16px, 1.45vw, 20px);
+}
+
+.care-act summary span {
+  border-left-width: 7px;
+  border-right-width: 7px;
+  border-top-width: 10px;
+}
+
+.care-acts__list {
+  max-width: 640px;
+}
+
+.care-act__body p {
+  font-size: 14px;
+}
+
+.care-acts__watermark {
+  width: min(32vw, 420px);
+  bottom: -130px;
+}
+
+@media (max-width: 760px) {
+  .care-act summary {
+    padding-block: 12px;
+    font-size: 15px;
+  }
+}
