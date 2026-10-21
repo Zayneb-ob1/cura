@@ -5004,3 +5004,32 @@ textarea {
     margin-bottom: 30px;
   }
 }
+
+/* iPhone : le champ date ne doit pas dépasser son cadre */
+.booking-form .form-field,
+.booking-form__row > * {
+  min-width: 0;
+}
+
+.booking-form input[type="date"] {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: left;
+}
+
+.booking-form input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+.booking-form__slot {
+  min-width: 0;
+}
+
+/* Message de confirmation plus lisible */
+.booking-form .form-status {
+  color: #4a4a46;
+  font-size: 14px;
+}

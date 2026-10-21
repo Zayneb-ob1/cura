@@ -224,6 +224,9 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
         </div>
       </section>
 
+      {/* Contact page: the contact form comes right after the introduction. */}
+      {withContactForm && <ContactFormSection />}
+
       {/* The contact page keeps only the contact form; booking lives on /rendez-vous. */}
       {!withContactForm && (
       <section className="content-shell appointment-layout" id="reserver">
@@ -258,6 +261,8 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
       </section>
       )}
 
+      {/* Reasons to book: shown on the contact page only. */}
+      {withContactForm && (
       <section className="info-rows info-rows--paper">
         <div className="content-shell">
           <article className="info-row">
@@ -266,8 +271,8 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
           </article>
         </div>
       </section>
+      )}
 
-      {withContactForm && <ContactFormSection />}
 
       <PageCta title={copy.ctaTitle} text={copy.ctaCopy} action={{ href: withContactForm ? "/rendez-vous" : "#reserver", label: copy.ctaButton }} />
       </main>
