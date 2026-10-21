@@ -5033,3 +5033,66 @@ textarea {
   color: #4a4a46;
   font-size: 14px;
 }
+
+/* ==== Responsive : en-tête sur petits téléphones (≤ 420 px) ==== */
+@media (max-width: 420px) {
+  .site-header__inner {
+    gap: 8px;
+    width: min(calc(100% - 28px), 1280px);
+  }
+
+  .site-header .logo {
+    gap: 6px;
+  }
+
+  .site-header .logo__mark {
+    width: 26px;
+    height: 31px;
+  }
+
+  .site-header .logo__wordmark {
+    height: 24px;
+  }
+
+  .site-header__appointment {
+    min-width: 0;
+    min-height: 40px;
+    padding-inline: 10px;
+    font-size: 10.5px;
+    letter-spacing: 0.01em;
+  }
+
+  .site-header__menu-toggle {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* ==== Lisibilité : tailles minimales ==== */
+.utility-languages button {
+  font-size: 12px;
+}
+
+.section-label {
+  font-size: max(11px, 1em);
+}
+
+main .section-label {
+  font-size: 11px;
+}
+
+.cura-footer__brand > span:not(.sr-only) {
+  font-size: 9px;
+}
+
+.cura-footer__bottom {
+  font-size: 12px;
+}
+
+.site-header .logo__descriptor {
+  font-size: 11px;
+}
+
+.cura-footer__languages button {
+  font-size: 12px;
+}
