@@ -4967,3 +4967,40 @@ textarea {
     height: 70px;
   }
 }
+
+/* Appel final : plus d'air (haut, titre, texte, bouton) */
+.home-cta {
+  padding-top: clamp(64px, 9vw, 110px);
+  padding-bottom: clamp(56px, 7vw, 90px);
+}
+
+.home-cta h2 {
+  margin-bottom: 22px;
+  line-height: 1.2;
+}
+
+.home-cta p,
+.care-page .home-cta p,
+.contact-page .home-cta p,
+.appointment-page .home-cta p {
+  margin: 0 auto 34px;
+  max-width: 560px;
+  line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  .home-cta {
+    padding-inline: 20px;
+  }
+
+  .home-cta h2 {
+    margin-bottom: 18px;
+  }
+
+  .home-cta p,
+  .care-page .home-cta p,
+  .contact-page .home-cta p,
+  .appointment-page .home-cta p {
+    margin-bottom: 30px;
+  }
+}
