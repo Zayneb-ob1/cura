@@ -213,7 +213,8 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
             <h2>{copy.introTitle}</h2>
             <div className="booking-intro__actions">
               {clinicConfig.hasPhone && <a className="button-link button-link--green" href={`tel:${clinicConfig.phone}`}>{copy.callClinic}</a>}
-              {clinicConfig.email && <a className="button-link button-link--green" href={`mailto:${clinicConfig.email}`}>{copy.sendMail}</a>}
+              {/* Opens the site contact form: a mailto: link depends on the phone's default mail app. */}
+              <a className="button-link button-link--green" href={withContactForm ? "#contact-form" : "/contact#contact-form"}>{copy.sendMail}</a>
               <a className="button-link button-link--green" href={withContactForm ? "/rendez-vous#reserver" : "#reserver"}>{copy.bookSite}</a>
               <a className="button-link button-link--green" href="https://www.doctoranytime.be/d/dentiste/ayoub-khana" target="_blank" rel="noreferrer">{copy.doctoranytime}</a>
             </div>

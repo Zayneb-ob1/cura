@@ -5101,3 +5101,14 @@ main .section-label {
 .utility-languages__active {
   font-size: 12px;
 }
+
+/* Dent des valeurs : réduite pour égaler visuellement les autres icônes */
+.home-values__grid li:first-child .value-icon {
+  padding: 14px 22px 8px;
+}
+
+@media (max-width: 720px) {
+  .home-values__grid li:first-child .value-icon {
+    padding: 12px 20px 6px;
+  }
+}
