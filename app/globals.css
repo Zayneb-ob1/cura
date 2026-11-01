@@ -5112,3 +5112,21 @@ main .section-label {
     padding: 12px 20px 6px;
   }
 }
+
+/* Cartes « Nos compétences » : photo sur toute la carte, dégradé en bas (maquette) */
+.competence-card {
+  background: #0b0a09;
+}
+
+.competence-card__media {
+  inset: 0;
+  height: 100%;
+}
+
+.competence-card__media img {
+  object-position: center 40%;
+}
+
+.competence-card__media::after {
+  background: linear-gradient(180deg, rgb(11 10 9 / 0) 0%, rgb(11 10 9 / 0) 42%, rgb(11 10 9 / 0.55) 72%, rgb(11 10 9 / 0.92) 100%);
+}
