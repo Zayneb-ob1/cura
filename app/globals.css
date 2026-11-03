@@ -5130,3 +5130,27 @@ main .section-label {
 .competence-card__media::after {
   background: linear-gradient(180deg, rgb(11 10 9 / 0) 0%, rgb(11 10 9 / 0) 42%, rgb(11 10 9 / 0.55) 72%, rgb(11 10 9 / 0.92) 100%);
 }
+
+/* Cadrage par photo : on voit mieux les dents (maquette) */
+.competence-card--esthetique .competence-card__media img { object-position: center 62%; }
+.competence-card--parodontologie .competence-card__media img { object-position: center 30%; }
+.competence-card--implantologie .competence-card__media img { object-position: center 35%; }
+.competence-card--soins-generaux .competence-card__media img { object-position: center 55%; }
+.competence-card--chirurgie .competence-card__media img { object-position: center 72%; }
+.competence-card--facettes .competence-card__media img { object-position: center 50%; }
+
+/* Icônes des valeurs alignées sur la même ligne de base */
+.home-values .value-icon > img:first-child,
+.home-values__grid li:first-child .value-icon > img:first-child {
+  object-position: center bottom;
+}
+
+.home-values__grid li:first-child .value-icon {
+  padding: 18px 20px 0;
+}
+
+@media (max-width: 720px) {
+  .home-values__grid li:first-child .value-icon {
+    padding: 16px 18px 0;
+  }
+}

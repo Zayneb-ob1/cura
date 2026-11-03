@@ -129,7 +129,7 @@ export default function HomePage() {
           <p className="home-competences__subtitle">{copy.careSubtitle}</p>
           <div className="home-competences__grid">
             {copy.competences.map(([slug, title, text]) => (
-              <Link className="competence-card" href="/soins" key={slug}>
+              <Link className={`competence-card competence-card--${slug}`} href="/soins" key={slug}>
                 <span className="competence-card__media">
                   <Image src={`/images/competences/${slug}-carte.webp`} alt="" fill sizes="(max-width: 720px) 100vw, 50vw" />
                 </span>
