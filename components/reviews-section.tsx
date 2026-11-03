@@ -74,6 +74,7 @@ export function ReviewsSection({ label, title, messages }: { label: string; titl
   // Carousel: three reviews visible on desktop (one on phones); arrows move one review at a time.
   const trackRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [positions, setPositions] = useState(1);
   const cardStep = () => {
     const track = trackRef.current;
     const card = track?.querySelector("article");
@@ -82,8 +83,22 @@ export function ReviewsSection({ label, title, messages }: { label: string; titl
   const scrollReviews = (direction: 1 | -1) => trackRef.current?.scrollBy({ left: direction * cardStep(), behavior: "smooth" });
   const updateActiveIndex = () => {
     const step = cardStep();
-    if (step && trackRef.current) setActiveIndex(Math.round(trackRef.current.scrollLeft / step));
+    const track = trackRef.current;
+    if (!step || !track) return;
+    setActiveIndex(Math.round(track.scrollLeft / step));
+    setPositions(Math.max(1, Math.round((track.scrollWidth - track.clientWidth) / step) + 1));
   };
+
+  // Recount the reachable positions once the reviews are shown and when the window is resized.
+  useEffect(() => {
+    if (reviewsState !== "ready") return;
+    const task = window.setTimeout(updateActiveIndex, 0);
+    window.addEventListener("resize", updateActiveIndex);
+    return () => {
+      window.clearTimeout(task);
+      window.removeEventListener("resize", updateActiveIndex);
+    };
+  });
 
   return (
     <section className="home-reviews" id="avis">
@@ -100,9 +115,9 @@ export function ReviewsSection({ label, title, messages }: { label: string; titl
             <div className="home-reviews__grid reviews-carousel__track" ref={trackRef} onScroll={updateActiveIndex}>
               {visibleReviews.map((review) => <article key={review.id}><span className="home-reviews__stars" aria-label={`${review.rating} / 5`}>{review.stars}</span><blockquote>{review.quote}</blockquote><p>{review.name}</p></article>)}
             </div>
-            <button type="button" className="reviews-carousel__arrow reviews-carousel__arrow--next" aria-label={language === "nl" ? "Volgende beoordelingen" : "Avis suivants"} onClick={() => scrollReviews(1)} disabled={activeIndex >= visibleReviews.length - 1}>›</button>
+            <button type="button" className="reviews-carousel__arrow reviews-carousel__arrow--next" aria-label={language === "nl" ? "Volgende beoordelingen" : "Avis suivants"} onClick={() => scrollReviews(1)} disabled={activeIndex >= positions - 1}>›</button>
             <div className="reviews-carousel__dots" aria-hidden="true">
-              {visibleReviews.map((review, index) => <span key={review.id} className={index === activeIndex ? "is-active" : undefined} />)}
+              {Array.from({ length: positions }, (_, index) => <span key={index} className={index === activeIndex ? "is-active" : undefined} />)}
             </div>
           </div>
         ) : <p>{messages.noReviews}</p>}
