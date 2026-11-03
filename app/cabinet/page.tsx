@@ -6,6 +6,7 @@ import { PageCta, PageHero } from "@/components/page-hero";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { useSiteSettings } from "@/components/site-settings-provider";
+import { InfoCards } from "@/components/info-cards";
 import { ValueIcon } from "@/components/value-icons";
 
 // Layout of Figma frame 7: hero, team + 3 info cards, values, reasons to book, closing call to action.
@@ -18,19 +19,6 @@ const pageCopy = {
     teamLabel: "La clinique",
     teamTitle: "Une équipe à votre écoute !",
     teamCopy: "Vous souhaitez avoir plus de renseignements ou prendre un rendez-vous ? Posez votre question à l’équipe de Cura, n’hésitez pas à nous contacter.",
-    addressCard: "Adresse du cabinet",
-    contactCard: "Nous contacter",
-    practicalCard: "Infos pratiques",
-    pending: "À confirmer",
-    directions: "Voir votre itinéraire",
-    call: "Téléphonez-nous",
-    write: "Écrivez-nous",
-    schedulePending: "Horaires à confirmer",
-    practicalCopy: "Avec ou sans rendez-vous préalable",
-    access: "Situé au rez-de-chaussée, entrée accessible",
-    parking: "Parking gratuit disponible sur place",
-    country: "Belgique",
-    hours: "Lundi au vendredi de 9h à 17h",
     valuesLabel: "Nos engagements",
     valuesTitle: "Nos valeurs",
     values: ["Le patient avant tout", "Des praticiens passionnés et compétents", "Des technologies performantes", "Le respect de la déontologie"],
@@ -51,19 +39,6 @@ const pageCopy = {
     teamLabel: "De kliniek",
     teamTitle: "Een team dat naar u luistert!",
     teamCopy: "Wenst u meer informatie of wilt u een afspraak maken? Stel uw vraag aan het Cura-team, wij helpen u graag verder.",
-    addressCard: "Adres van de praktijk",
-    contactCard: "Contacteer ons",
-    practicalCard: "Praktische info",
-    pending: "Te bevestigen",
-    directions: "Bekijk uw route",
-    call: "Bel ons",
-    write: "Schrijf ons",
-    schedulePending: "Openingsuren te bevestigen",
-    practicalCopy: "Met of zonder voorafgaande afspraak",
-    access: "Op het gelijkvloers, toegankelijke ingang",
-    parking: "Gratis parking ter plaatse",
-    country: "België",
-    hours: "Maandag tot vrijdag van 9u tot 17u",
     valuesLabel: "Onze engagementen",
     valuesTitle: "Onze waarden",
     values: ["De patiënt staat voorop", "Gedreven en deskundige tandartsen", "Performante technologie", "Respect voor de deontologie"],
@@ -103,33 +78,7 @@ export default function CabinetPage() {
               </div>
               <p>{copy.teamCopy}</p>
             </div>
-            <div className="info-cards">
-              <article>
-                <h3>{copy.addressCard}</h3>
-                <p className="info-cards__upper">{clinicConfig.hasAddress ? <>{clinicConfig.addressLine1}<br />{clinicConfig.postalCity}, {copy.country}</> : copy.pending}</p>
-                <p>{copy.access}</p>
-                {clinicConfig.mapUrl && <a className="info-cards__button" href={clinicConfig.mapUrl} target="_blank" rel="noreferrer">{copy.directions}</a>}
-              </article>
-              <article>
-                <h3>{copy.contactCard}</h3>
-                <p>
-                  <span className="info-cards__upper">{copy.hours}</span>
-                  <br />
-                  <br />
-                  {clinicConfig.hasPhone ? <a href={`tel:${clinicConfig.phone}`}>{clinicConfig.phoneDisplay}</a> : copy.pending}
-                  {clinicConfig.email && <><br /><a href={`mailto:${clinicConfig.email}`}>{clinicConfig.email}</a></>}
-                </p>
-                {clinicConfig.hasPhone
-                  ? <a className="info-cards__button" href={`tel:${clinicConfig.phone}`}>{copy.call}</a>
-                  : <a className="info-cards__button" href="/contact">{copy.write}</a>}
-              </article>
-              <article>
-                <h3>{copy.practicalCard}</h3>
-                <p className="info-cards__upper">{copy.parking}</p>
-                <p>{copy.practicalCopy}</p>
-                <a className="info-cards__button" href="/rendez-vous">{copy.appointment}</a>
-              </article>
-            </div>
+            <InfoCards practicalAction={{ href: "/rendez-vous", label: copy.appointment }} />
           </div>
         </section>
 

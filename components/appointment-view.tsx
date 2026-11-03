@@ -1,9 +1,11 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, Fragment, useEffect, useRef, useState } from "react";
 import { SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
 import { ContactFormSection } from "@/components/contact-form-section";
+import { InfoCards } from "@/components/info-cards";
+import { ReviewsSection } from "@/components/reviews-section";
 import { PageCta, PageHero } from "@/components/page-hero";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -12,8 +14,13 @@ import { treatmentsByLanguage } from "@/lib/content";
 
 const pageCopy = {
   fr: {
-    heroLine1: "PRENDRE RENDEZ-VOUS CHEZ", heroLine2: "CURA",
-    heroCopy: "Bénéficiez de soins dentaires personnalisés et d’une qualité supérieure, adaptés à vos besoins.",
+    contactHeroTitle: "CONTACTEZ-NOUS", contactHeroAccent: "CURA CLINIC", contactHeroCopy: "Vous pouvez poser votre question directement ici.",
+    contactIntroTitle: "Rencontrons-nous",
+    contactIntroText: ["Chaque patient est unique. Chez Clinic Cura, nous prenons le temps de comprendre vos besoins afin de vous proposer une prise en charge adaptée à votre situation.", "Pour obtenir un devis personnalisé, une première consultation au cabinet est nécessaire. Elle nous permettra d’évaluer les soins à envisager et de définir avec vous le traitement le plus approprié.", "Pour prendre rendez-vous, contactez-nous par téléphone ou via le formulaire de contact disponible sur notre site.\n**À noter :** les dentistes de Clinic Cura ne sont **pas conventionnés**.", "Nous serons ravis de vous accueillir et d’échanger avec vous sur vos besoins."],
+    mapTitle: "Plan d’accès", practicalDoctoranytime: "Prendre RDV sur Doctoranytime",
+    reviewsLabel: "Avis", reviewsTitle: "CE QU’ON DIT À PROPOS DE NOUS", noReviews: "Aucun avis vérifié n’est publié pour le moment.", loadingReviews: "Chargement des avis…", reviewsError: "Les avis ne peuvent pas être chargés pour le moment.",
+    heroLine1: "PRENDRE RENDEZ-VOUS", heroChez: "CHEZ", heroLine2: "CURA CLINIC",
+    heroCopy: "Bénéficiez de soins dentaires personnalisés et d’une qualité supérieure, adaptés à vos besoins uniques.",
     introTitle: "Prendre rendez-vous chez Cura",
     introText: ["Parce que chaque patient est différent, il est important de déterminer avec justesse votre besoin et d’adapter nos soins.", "Si vous souhaitez obtenir un devis, vous devez d’abord vous rendre au cabinet pour que nous évaluions ensemble l’intervention nécessaire.", "Pour cela, contactez-nous par e-mail, par téléphone, ou remplissez le formulaire ci-dessous pour convenir d’un rendez-vous.", "Nous avons hâte d’échanger avec vous."],
     callClinic: "Appeler la clinique", sendMail: "Envoyer un e-mail", bookOnline: "Réserver en ligne", bookNow: "Réservez maintenant", fullName: "Nom complet", consultationType: "Types de consultation", chooseTime: "Choisissez l’heure du rendez-vous", nextStep: "Suivant", back: "Retour", doctoranytime: "Prendre rendez-vous sur Doctoranytime", bookSite: "Prendre rendez-vous en ligne",
@@ -28,7 +35,12 @@ const pageCopy = {
     confirmation: "Confirmation", next: "Ce qui se passe ensuite", nextCopy: "Nous vous rappelons ou vous écrivons sous 24 h pour confirmer l’heure exacte.", address: "Adresse", addressPending: "Coordonnées à confirmer", hours: "Horaires",
   },
   nl: {
-    heroLine1: "EEN AFSPRAAK MAKEN BIJ", heroLine2: "CURA",
+    contactHeroTitle: "CONTACTEER ONS", contactHeroAccent: "CURA CLINIC", contactHeroCopy: "U kunt uw vraag hier rechtstreeks stellen.",
+    contactIntroTitle: "Laten we kennismaken",
+    contactIntroText: ["Elke patiënt is uniek. Bij Clinic Cura nemen we de tijd om uw noden te begrijpen en u zorg op maat van uw situatie voor te stellen.", "Voor een persoonlijke offerte is een eerste consultatie in de praktijk nodig. Zo kunnen we de nodige zorg beoordelen en samen met u de meest geschikte behandeling bepalen.", "Om een afspraak te maken, contacteer ons telefonisch of via het contactformulier op onze website.\n**Let op:** de tandartsen van Clinic Cura zijn **niet geconventioneerd**.", "We ontvangen u graag en bespreken uw noden met u."],
+    mapTitle: "Routebeschrijving", practicalDoctoranytime: "Afspraak via Doctoranytime",
+    reviewsLabel: "Beoordelingen", reviewsTitle: "WAT MEN OVER ONS ZEGT", noReviews: "Er zijn momenteel geen geverifieerde beoordelingen gepubliceerd.", loadingReviews: "Beoordelingen laden…", reviewsError: "De beoordelingen kunnen momenteel niet worden geladen.",
+    heroLine1: "EEN AFSPRAAK MAKEN", heroChez: "BIJ", heroLine2: "CURA CLINIC",
     heroCopy: "Geniet van persoonlijke tandzorg van hoge kwaliteit, afgestemd op uw noden.",
     introTitle: "Een afspraak maken bij Cura",
     introText: ["Omdat elke patiënt anders is, is het belangrijk om uw noden juist in te schatten en onze zorg daarop af te stemmen.", "Wenst u een offerte? Kom dan eerst langs in de praktijk, zodat we samen de nodige behandeling kunnen bepalen.", "Contacteer ons daarvoor per e-mail of telefoon, of vul het formulier hieronder in om een afspraak te maken.", "We kijken ernaar uit u te ontmoeten."],
@@ -103,6 +115,16 @@ function limitDateToFourDigitYear(event: FormEvent<HTMLInputElement>) {
 }
 
 /** Appointment page of Figma frame 8; the contact page shows it with the contact form added. */
+// Renders "**bold**" segments and "\n" line breaks from the copy strings.
+function richText(text: string) {
+  return text.split("\n").map((line, lineIndex) => (
+    <Fragment key={lineIndex}>
+      {lineIndex > 0 && <br />}
+      {line.split("**").map((part, index) => (index % 2 === 1 ? <strong key={index}>{part}</strong> : part))}
+    </Fragment>
+  ));
+}
+
 export function AppointmentView({ withContactForm = false }: { withContactForm?: boolean }) {
   const { language } = useLanguage();
   const clinicConfig = useSiteSettings();
@@ -123,7 +145,6 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
     setStep(2);
   }
 
-  const configuredDescription = language === "fr" ? formConfig?.descriptionFr : formConfig?.descriptionNl;
   const configuredSubmitLabel = language === "fr" ? formConfig?.submitLabelFr : formConfig?.submitLabelNl;
 
   useEffect(() => {
@@ -204,74 +225,90 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
     <div className="appointment-page">
       <SiteHeader />
       <main>
-      <PageHero title={copy.heroLine1} accent={copy.heroLine2} text={copy.heroCopy} visual="none" />
+      {withContactForm ? (
+        <>
+          {/* Contact page (design): meet us, contact form, map. */}
+          <PageHero title={copy.contactHeroTitle} accent={copy.contactHeroAccent} text={copy.contactHeroCopy} photo="/images/rdv-hero.webp" />
 
-      <section className="booking-intro">
-        <div className="content-shell split-intro">
-          <div>
-            <SectionLabel>{copy.label}</SectionLabel>
-            <h2>{copy.introTitle}</h2>
+          <section className="booking-intro">
+            <div className="content-shell split-intro split-intro--top">
+              <div>
+                <SectionLabel>{copy.label}</SectionLabel>
+                <h2>{copy.contactIntroTitle}</h2>
             <div className="booking-intro__actions">
               {clinicConfig.hasPhone && <a className="button-link button-link--green" href={`tel:${clinicConfig.phone}`}>{copy.callClinic}</a>}
               {/* Opens the site contact form: a mailto: link depends on the phone's default mail app. */}
-              <a className="button-link button-link--green" href={withContactForm ? "#contact-form" : "/contact#contact-form"}>{copy.sendMail}</a>
-              <a className="button-link button-link--green" href={withContactForm ? "/rendez-vous#reserver" : "#reserver"}>{copy.bookSite}</a>
+              <a className="button-link button-link--green" href="#contact-form">{copy.sendMail}</a>
               <a className="button-link button-link--green" href="https://www.doctoranytime.be/d/dentiste/ayoub-khana" target="_blank" rel="noreferrer">{copy.doctoranytime}</a>
+              <a className="button-link button-link--green" href="/rendez-vous#reserver">{copy.bookSite}</a>
             </div>
-          </div>
-          <div className="booking-intro__text">
-            {(configuredDescription ? [configuredDescription] : copy.introText).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-          </div>
-        </div>
-      </section>
-
-      {/* Contact page: the contact form comes right after the introduction. */}
-      {withContactForm && <ContactFormSection />}
-
-      {/* The contact page keeps only the contact form; booking lives on /rendez-vous. */}
-      {!withContactForm && (
-      <section className="content-shell appointment-layout" id="reserver">
-        <h2 className="appointment-layout__title">{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || copy.bookNow}</h2>
-        <form className="booking-form" onSubmit={submitAppointment} aria-busy={submissionState === "sending"} ref={formRef}>
-          <div className="booking-form__step" hidden={step !== 1}>
-            <div className="booking-form__row">
-              <div className="form-field"><label htmlFor="full-name">{copy.fullName}</label><input id="full-name" name="fullName" required autoComplete="name" /></div>
-              <div className="form-field"><label htmlFor="appointment-phone">{copy.phone}</label><input id="appointment-phone" name="phone" type="tel" required autoComplete="tel" /></div>
-            </div>
-            <div className="form-field"><label htmlFor="care">{copy.consultationType}</label><select id="care" name="care" value={care} onChange={(event) => setCare(event.target.value)}><option value="">{copy.unknown}</option>{treatments.map((item) => <option key={item.number} value={item.number}>{item.name}</option>)}</select></div>
-            <fieldset className="booking-form__slot">
-              <legend>{copy.chooseTime}</legend>
-              <div className="booking-form__row">
-                <div className="form-field"><label htmlFor="preferred-day">{copy.day}</label><input id="preferred-day" name="day" type="date" max="9999-12-31" onInput={limitDateToFourDigitYear} required /></div>
-                <div className="form-field"><label htmlFor="preferred-time">{copy.time}</label><select id="preferred-time" name="time"><option>{copy.morning}</option><option>{copy.afternoon}</option><option>{copy.any}</option></select></div>
               </div>
-            </fieldset>
-            <button type="button" className="booking-form__button" onClick={goToDetails}>{copy.nextStep}</button>
-          </div>
-          <div className="booking-form__step" hidden={step !== 2}>
-            <div className="form-field"><label htmlFor="appointment-email">{copy.email}</label><input id="appointment-email" name="email" type="email" required={step === 2} autoComplete="email" /></div>
-            <div className="form-field"><label htmlFor="note">{copy.note}</label><textarea id="note" name="note" placeholder={copy.placeholder} /></div>
-            <label className="appointment-consent"><input type="checkbox" name="consent" required={step === 2} /> {copy.consent}</label>
-            <div className="booking-form__actions">
-              <button type="button" className="booking-form__back" onClick={() => setStep(1)}>{copy.back}</button>
-              <button type="submit" className="booking-form__button" disabled={submissionState === "sending" || formConfig?.enabled === false}>{submissionState === "sending" ? copy.sending : configuredSubmitLabel || copy.send}</button>
+              <div className="booking-intro__text">
+                {copy.contactIntroText.map((paragraph) => <p key={paragraph}>{richText(paragraph)}</p>)}
+              </div>
             </div>
-          </div>
-          {submissionState !== "idle" && <p className="form-status" role="status" aria-live="polite">{copy[submissionState]}</p>}
-        </form>
-      </section>
-      )}
+          </section>
 
-      {/* Reasons to book: shown on the contact page only. */}
-      {withContactForm && (
-      <section className="info-rows info-rows--paper">
-        <div className="content-shell">
-          <article className="info-row">
-            <h2>{copy.reasonsTitle}</h2>
-            <div><p>{copy.reasonsIntro}</p><ul>{copy.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></div>
-          </article>
-        </div>
-      </section>
+          <ContactFormSection />
+
+          <section className="contact-map">
+            <div className="content-shell">
+              <h2>{copy.mapTitle}</h2>
+              <iframe
+                title={copy.mapTitle}
+                src="https://www.google.com/maps?q=Kuringersteenweg+511,+3511+Hasselt,+Belgique&output=embed"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+              />
+            </div>
+          </section>
+        </>
+      ) : (
+        <>
+          <PageHero title={<>{copy.heroLine1}<br />{copy.heroChez} <em>{copy.heroLine2}</em></>} text={copy.heroCopy} photo="/images/rdv-hero.webp" />
+
+          {/* Appointment page (design): the booking form first, then practical info and reviews. */}
+          <section className="content-shell appointment-layout" id="reserver">
+            <SectionLabel>{copy.label}</SectionLabel>
+            <h2 className="appointment-layout__title">{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || copy.bookNow}</h2>
+            <form className="booking-form" onSubmit={submitAppointment} aria-busy={submissionState === "sending"} ref={formRef}>
+              <div className="booking-form__step" hidden={step !== 1}>
+                <div className="booking-form__row">
+                  <div className="form-field"><label htmlFor="full-name">{copy.fullName}</label><input id="full-name" name="fullName" required autoComplete="name" /></div>
+                  <div className="form-field"><label htmlFor="appointment-phone">{copy.phone}</label><input id="appointment-phone" name="phone" type="tel" required autoComplete="tel" /></div>
+                </div>
+                <div className="form-field"><label htmlFor="care">{copy.consultationType}</label><select id="care" name="care" value={care} onChange={(event) => setCare(event.target.value)}><option value="">{copy.unknown}</option>{treatments.map((item) => <option key={item.number} value={item.number}>{item.name}</option>)}</select></div>
+                <fieldset className="booking-form__slot">
+                  <legend>{copy.chooseTime}</legend>
+                  <div className="booking-form__row">
+                    <div className="form-field"><label htmlFor="preferred-day">{copy.day}</label><input id="preferred-day" name="day" type="date" max="9999-12-31" onInput={limitDateToFourDigitYear} required /></div>
+                    <div className="form-field"><label htmlFor="preferred-time">{copy.time}</label><select id="preferred-time" name="time"><option>{copy.morning}</option><option>{copy.afternoon}</option><option>{copy.any}</option></select></div>
+                  </div>
+                </fieldset>
+                <button type="button" className="booking-form__button" onClick={goToDetails}>{copy.nextStep}</button>
+              </div>
+              <div className="booking-form__step" hidden={step !== 2}>
+                <div className="form-field"><label htmlFor="appointment-email">{copy.email}</label><input id="appointment-email" name="email" type="email" required={step === 2} autoComplete="email" /></div>
+                <div className="form-field"><label htmlFor="note">{copy.note}</label><textarea id="note" name="note" placeholder={copy.placeholder} /></div>
+                <label className="appointment-consent"><input type="checkbox" name="consent" required={step === 2} /> {copy.consent}</label>
+                <div className="booking-form__actions">
+                  <button type="button" className="booking-form__back" onClick={() => setStep(1)}>{copy.back}</button>
+                  <button type="submit" className="booking-form__button" disabled={submissionState === "sending" || formConfig?.enabled === false}>{submissionState === "sending" ? copy.sending : configuredSubmitLabel || copy.send}</button>
+                </div>
+              </div>
+              {submissionState !== "idle" && <p className="form-status" role="status" aria-live="polite">{copy[submissionState]}</p>}
+            </form>
+          </section>
+
+          <section className="contact-team contact-team--compact">
+            <div className="content-shell">
+              <InfoCards practicalAction={{ href: "https://www.doctoranytime.be/d/dentiste/ayoub-khana", label: copy.practicalDoctoranytime, external: true }} />
+            </div>
+          </section>
+
+          <ReviewsSection label={copy.reviewsLabel} title={copy.reviewsTitle} messages={copy} />
+        </>
       )}
 
 

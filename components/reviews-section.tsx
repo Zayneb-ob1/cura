@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
 
@@ -71,6 +71,20 @@ export function ReviewsSection({ label, title, messages }: { label: string; titl
         quote: review.language && review.language !== language && review.translation ? review.translation : review.quote,
         name: review.name,
       }));
+  // Carousel: three reviews visible on desktop (one on phones); arrows move one review at a time.
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const cardStep = () => {
+    const track = trackRef.current;
+    const card = track?.querySelector("article");
+    return track && card ? card.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || "0") : 0;
+  };
+  const scrollReviews = (direction: 1 | -1) => trackRef.current?.scrollBy({ left: direction * cardStep(), behavior: "smooth" });
+  const updateActiveIndex = () => {
+    const step = cardStep();
+    if (step && trackRef.current) setActiveIndex(Math.round(trackRef.current.scrollLeft / step));
+  };
+
   return (
     <section className="home-reviews" id="avis">
       <div className="content-shell">
@@ -81,8 +95,15 @@ export function ReviewsSection({ label, title, messages }: { label: string; titl
         ) : reviewsState === "error" ? (
           <p role="alert">{messages.reviewsError}</p>
         ) : visibleReviews.length > 0 ? (
-          <div className="home-reviews__grid">
-            {visibleReviews.map((review) => <article key={review.id}><span className="home-reviews__stars" aria-label={`${review.rating} / 5`}>{review.stars}</span><blockquote>{review.quote}</blockquote><p>{review.name}</p></article>)}
+          <div className="reviews-carousel">
+            <button type="button" className="reviews-carousel__arrow reviews-carousel__arrow--prev" aria-label={language === "nl" ? "Vorige beoordelingen" : "Avis précédents"} onClick={() => scrollReviews(-1)} disabled={activeIndex === 0}>‹</button>
+            <div className="home-reviews__grid reviews-carousel__track" ref={trackRef} onScroll={updateActiveIndex}>
+              {visibleReviews.map((review) => <article key={review.id}><span className="home-reviews__stars" aria-label={`${review.rating} / 5`}>{review.stars}</span><blockquote>{review.quote}</blockquote><p>{review.name}</p></article>)}
+            </div>
+            <button type="button" className="reviews-carousel__arrow reviews-carousel__arrow--next" aria-label={language === "nl" ? "Volgende beoordelingen" : "Avis suivants"} onClick={() => scrollReviews(1)} disabled={activeIndex >= visibleReviews.length - 1}>›</button>
+            <div className="reviews-carousel__dots" aria-hidden="true">
+              {visibleReviews.map((review, index) => <span key={review.id} className={index === activeIndex ? "is-active" : undefined} />)}
+            </div>
           </div>
         ) : <p>{messages.noReviews}</p>}
       </div>
