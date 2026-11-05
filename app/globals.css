@@ -5412,3 +5412,10 @@ main .section-label {
     padding-top: 74px;
   }
 }
+
+/* Soins : filigrane un peu plus grand et plus discret */
+.care-acts__watermark {
+  top: 200px;
+  width: min(36vw, 440px);
+  opacity: 0.55;
+}
