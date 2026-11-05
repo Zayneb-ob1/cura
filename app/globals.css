@@ -5380,3 +5380,29 @@ main .section-label {
     padding: 44px 0 52px;
   }
 }
+
+/* Soins : dent en filigrane entière, alignée à gauche avec « Nos actes » */
+.care-acts__intro {
+  position: relative;
+  align-self: stretch;
+}
+
+.care-acts__watermark {
+  left: 0;
+  top: 190px;
+  bottom: auto;
+  width: min(30vw, 360px);
+}
+
+.care-acts {
+  padding-bottom: 96px;
+}
+
+/* « Une équipe à votre écoute » : le texte s'aligne sur le titre (pas sur le libellé) */
+.split-intro:not(.split-intro--top) {
+  align-items: end;
+}
+
+.split-intro:not(.split-intro--top) > p {
+  padding-bottom: 4px;
+}
