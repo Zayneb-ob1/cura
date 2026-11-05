@@ -5419,3 +5419,8 @@ main .section-label {
   width: min(36vw, 440px);
   opacity: 0.55;
 }
+
+/* Le trait de la dent commence a 16,5 % de l image : on compense pour l aligner sur le texte */
+.care-acts__watermark {
+  transform: translateX(-16.5%);
+}
