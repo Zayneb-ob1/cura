@@ -5406,3 +5406,9 @@ main .section-label {
 .split-intro:not(.split-intro--top) > p {
   padding-bottom: 4px;
 }
+
+@media (min-width: 761px) {
+  .split-intro--top .booking-intro__text {
+    padding-top: 74px;
+  }
+}
