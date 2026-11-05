@@ -5424,3 +5424,10 @@ main .section-label {
 .care-acts__watermark {
   transform: translateX(-16.5%);
 }
+
+/* Bas du trait de la dent aligne sur le bas de la liste (Orthodontie), taille inchangee */
+.care-acts__watermark {
+  top: auto;
+  bottom: 0;
+  transform: translate(-16.5%, 22.6%);
+}
