@@ -5431,3 +5431,10 @@ main .section-label {
   bottom: 0;
   transform: translate(-16.5%, 22.6%);
 }
+
+@media (min-width: 761px) {
+  .split-intro:not(.split-intro--top) > p {
+    padding-bottom: 0;
+    transform: translateY(18px);
+  }
+}
