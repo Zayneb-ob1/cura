@@ -24,8 +24,8 @@ type SettingsRow = RowDataPacket & {
 };
 
 const defaultSettings: EditableClinicSettings = {
-  phoneDisplay: clinicConfig.phoneDisplay || "+32 (0)11 00 00 00",
-  email: clinicConfig.email || "contact@curadental.be",
+  phoneDisplay: clinicConfig.phoneDisplay || "+32 808 35 423",
+  email: clinicConfig.email || "contact.curadental@gmail.com",
   scheduleFr: clinicConfig.schedule.fr || "Lun–Ven 9h00–17h00",
   scheduleNl: clinicConfig.schedule.nl || "Ma–Vr 9u00–17u00",
   emergencyFr: clinicConfig.emergency.fr || "",
