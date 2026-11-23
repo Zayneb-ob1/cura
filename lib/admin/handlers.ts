@@ -25,8 +25,8 @@ export function errorResponse(error: unknown) {
   return NextResponse.json({ error: "Internal server error" }, { status: 500, headers: noStoreHeaders });
 }
 
-function isAuthorized(request: NextRequest) {
-  return readAdminSession(request) !== null;
+async function isAuthorized(request: NextRequest) {
+  return (await readAdminSession(request)) !== null;
 }
 
 function positiveInteger(value: string | null, fallback: number, name: string, maximum: number) {
@@ -61,7 +61,7 @@ function listOptions(request: NextRequest, collection: CollectionName) {
 }
 
 export async function handleAdminList(request: NextRequest, collection: CollectionName) {
-  if (!isAuthorized(request)) return unauthorized();
+  if (!(await isAuthorized(request))) return unauthorized();
   try {
     const result = await listRecordsPage<StoredRecord>(collection, listOptions(request, collection));
     const totalPages = Math.ceil(result.total / result.pageSize);
@@ -86,7 +86,7 @@ export async function handleAdminList(request: NextRequest, collection: Collecti
 export async function handleAdminCreate(request: NextRequest, collection: CollectionName) {
   try {
     assertTrustedAdminOrigin(request);
-    if (!isAuthorized(request)) return unauthorized();
+    if (!(await isAuthorized(request))) return unauthorized();
     const body = await readJsonObject(request);
     const data = normalizeRecord(collection, body, { creating: true });
     const item = await createRecord(collection, data);
@@ -99,7 +99,7 @@ export async function handleAdminCreate(request: NextRequest, collection: Collec
 export async function handleAdminCollectionPatch(request: NextRequest, collection: CollectionName) {
   try {
     assertTrustedAdminOrigin(request);
-    if (!isAuthorized(request)) return unauthorized();
+    if (!(await isAuthorized(request))) return unauthorized();
     const body = await readJsonObject(request);
     const id = requiredId(body.id);
     const updates = normalizeRecord(collection, body, { creating: false, allowId: true });
@@ -114,7 +114,7 @@ export async function handleAdminCollectionPatch(request: NextRequest, collectio
 export async function handleAdminCollectionDelete(request: NextRequest, collection: CollectionName) {
   try {
     assertTrustedAdminOrigin(request);
-    if (!isAuthorized(request)) return unauthorized();
+    if (!(await isAuthorized(request))) return unauthorized();
     let id = new URL(request.url).searchParams.get("id");
     if (!id) {
       const body = await readJsonObject(request);
@@ -130,7 +130,7 @@ export async function handleAdminCollectionDelete(request: NextRequest, collecti
 }
 
 export async function handleAdminGet(request: NextRequest, collection: CollectionName, rawId: string) {
-  if (!isAuthorized(request)) return unauthorized();
+  if (!(await isAuthorized(request))) return unauthorized();
   try {
     const id = requiredId(rawId);
     const item = await findRecord<StoredRecord>(collection, id);
@@ -148,7 +148,7 @@ export async function handleAdminPatch(
 ) {
   try {
     assertTrustedAdminOrigin(request);
-    if (!isAuthorized(request)) return unauthorized();
+    if (!(await isAuthorized(request))) return unauthorized();
     const id = requiredId(rawId);
     const body = await readJsonObject(request);
     const updates = normalizeRecord(collection, body, { creating: false });
@@ -167,7 +167,7 @@ export async function handleAdminDelete(
 ) {
   try {
     assertTrustedAdminOrigin(request);
-    if (!isAuthorized(request)) return unauthorized();
+    if (!(await isAuthorized(request))) return unauthorized();
     const id = requiredId(rawId);
     const deleted = await deleteRecord(collection, id);
     if (!deleted) return NextResponse.json({ error: "Not found" }, { status: 404, headers: noStoreHeaders });

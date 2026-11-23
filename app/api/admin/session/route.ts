@@ -5,10 +5,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const session = readAdminSession(request);
+  const session = await readAdminSession(request);
   return NextResponse.json(
     session
-      ? { authenticated: true, user: { username: session.username }, expiresAt: session.expiresAt }
+      ? { authenticated: true, user: { username: session.username, name: session.name, role: session.role }, expiresAt: session.expiresAt }
       : { authenticated: false, user: null },
     { headers: { "Cache-Control": "no-store" } },
   );

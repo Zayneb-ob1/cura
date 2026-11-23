@@ -15,7 +15,7 @@ function unauthorized() {
 }
 
 export async function GET(request: NextRequest) {
-  if (!readAdminSession(request)) return unauthorized();
+  if (!(await readAdminSession(request))) return unauthorized();
   try {
     const items = await listBlockedIps();
     return NextResponse.json({
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     assertTrustedAdminOrigin(request);
-    if (!readAdminSession(request)) return unauthorized();
+    if (!(await readAdminSession(request))) return unauthorized();
     const body = await readJsonObject(request);
     const unsupported = Object.keys(body).filter((key) => key !== "ipAddress");
     if (unsupported.length > 0) throw new ApiError(400, `Unsupported fields: ${unsupported.join(", ")}`);

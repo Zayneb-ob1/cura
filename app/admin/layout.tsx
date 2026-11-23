@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AdminLanguageProvider } from "./admin-i18n";
 
 export const metadata: Metadata = {
   title: { absolute: "Administration | CURA" },
@@ -9,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function AdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return children;
+  return <AdminLanguageProvider>{children}</AdminLanguageProvider>;
 }

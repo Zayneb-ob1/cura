@@ -13,7 +13,7 @@ const noStoreHeaders = { "Cache-Control": "no-store" };
 export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     assertTrustedAdminOrigin(request);
-    if (!readAdminSession(request)) {
+    if (!(await readAdminSession(request))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: noStoreHeaders });
     }
     const { id: rawId } = await context.params;

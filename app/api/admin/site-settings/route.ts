@@ -19,7 +19,7 @@ function unauthorized() {
 }
 
 export async function GET(request: NextRequest) {
-  if (!readAdminSession(request)) return unauthorized();
+  if (!(await readAdminSession(request))) return unauthorized();
   try {
     const settings = await getEditableClinicSettings();
     return NextResponse.json({ settings }, { headers: noStoreHeaders });
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     assertTrustedAdminOrigin(request);
-    if (!readAdminSession(request)) return unauthorized();
+    if (!(await readAdminSession(request))) return unauthorized();
     const body = await readJsonObject(request);
     const settings = normalizeClinicSettings(body);
     const savedSettings = await saveEditableClinicSettings(settings);

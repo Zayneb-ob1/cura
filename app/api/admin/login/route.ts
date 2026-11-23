@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { credentialsAreValid, setAdminSessionCookie } from "@/lib/admin/auth";
+import { authenticateAdmin, setAdminSessionCookie } from "@/lib/admin/auth";
 import { ApiError, readJsonObject } from "@/lib/admin/validation";
 import { errorResponse } from "@/lib/admin/handlers";
 import { assertTrustedAdminOrigin } from "@/lib/admin/request-security";
@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
     }
     const username = body.username.trim();
 
-    if (!credentialsAreValid(username, body.password)) {
+    const user = await authenticateAdmin(username, body.password);
+    if (!user) {
       return NextResponse.json(
         { error: "Invalid username or password" },
         { status: 401, headers: rateLimitHeaders(rateLimit) },
@@ -42,10 +43,10 @@ export async function POST(request: NextRequest) {
     }
 
     const response = NextResponse.json(
-      { authenticated: true, user: { username } },
+      { authenticated: true, user: { username: user.email, name: user.name, role: user.role } },
       { headers: rateLimitHeaders(rateLimit) },
     );
-    setAdminSessionCookie(response, request, username);
+    setAdminSessionCookie(response, request, user.email);
     return response;
   } catch (error) {
     const response = errorResponse(error);
