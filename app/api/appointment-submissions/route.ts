@@ -3,6 +3,7 @@ import { createRecord } from "@/lib/admin/store";
 import { errorResponse } from "@/lib/admin/handlers";
 import { normalizeRecord, readJsonObject } from "@/lib/admin/validation";
 import { getFormConfig } from "@/lib/forms/config";
+import { envoyerNouveauRdv } from "@/lib/mailer";
 import { assertConfiguredRequiredFields } from "@/lib/forms/validation";
 import { consumeRateLimit, rateLimitHeaders, type RateLimitResult } from "@/lib/security/rate-limit";
 import { isBlockedIp, requestClientIp } from "@/lib/security/blocked-ips";
@@ -39,6 +40,13 @@ export async function POST(request: NextRequest) {
     if (form) assertConfiguredRequiredFields(form, body);
     const data = normalizeRecord("appointments", body, { creating: true, publicSubmission: true });
     const item = await createRecord("appointments", data);
+
+    // The request is saved first; a mail failure must not lose it.
+    try {
+      await envoyerNouveauRdv(data as Record<string, string>);
+    } catch (mailError) {
+      console.error("Envoi email rendez-vous echoue:", mailError);
+    }
     return NextResponse.json(
       { success: true, id: item.id },
       { status: 201, headers: rateLimitHeaders(rateLimit) },

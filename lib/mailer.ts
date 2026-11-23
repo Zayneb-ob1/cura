@@ -40,6 +40,52 @@ function mailTransport() {
 }
 
 const CONTACT = process.env.CONTACT_EMAIL ?? "contact@curadental.be";
+// Mailbox that receives the notifications of new contact messages and appointment requests.
+const NOTIFY = process.env.NOTIFY_EMAIL?.trim() || "contact.curadental@gmail.com";
+
+interface AppointmentRequestData {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  care?: string;
+  day?: string;
+  time?: string;
+  note?: string;
+  language?: string;
+  [cle: string]: unknown;
+}
+
+/** Notifies the practice of a new appointment request (it is also listed in the admin dashboard). */
+export async function envoyerNouveauRdv(data: AppointmentRequestData): Promise<void> {
+  const esc = (v?: string) => String(v ?? "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const name = `${data.firstName ?? ""} ${data.lastName ?? ""}`.trim();
+  const rows: [string, string | undefined][] = [
+    ["Nom", name],
+    ["Téléphone", data.phone],
+    ["Email", data.email],
+    ["Soin", data.care],
+    ["Jour souhaité", data.day],
+    ["Moment", data.time],
+    ["Langue", data.language],
+  ];
+  const html = `
+    <h2 style="font-family:sans-serif">Nouvelle demande de rendez-vous — curadental.be</h2>
+    <table cellpadding="6" style="border-collapse:collapse;font-family:sans-serif">
+      ${rows.map(([label, value]) => `<tr><td style="background:#f4f6f8"><b>${label}</b></td><td>${esc(value)}</td></tr>`).join("")}
+    </table>
+    <p style="white-space:pre-wrap;font-family:sans-serif">${esc(data.note)}</p>
+    <p style="font-family:sans-serif">À confirmer depuis le dashboard : <a href="https://curadental.be/admin/reservations">curadental.be/admin/reservations</a></p>
+  `;
+  await mailTransport().sendMail({
+    from: `"Site Curadental" <${CONTACT}>`,
+    to: NOTIFY,
+    replyTo: data.email || undefined,
+    subject: `Nouvelle demande de rendez-vous — ${name || "patient"}${data.day ? ` (${data.day})` : ""}`,
+    text: rows.map(([label, value]) => `${label}: ${value ?? ""}`).join("\n") + `\n\n${data.note ?? ""}\n\nDashboard : https://curadental.be/admin/reservations`,
+    html,
+  });
+}
 
 interface ContactData {
   name?: string;
@@ -66,7 +112,7 @@ export async function envoyerContact(data: ContactData): Promise<void> {
   `;
   await mailTransport().sendMail({
     from: `"Site Curadental" <${CONTACT}>`,
-    to: CONTACT,
+    to: NOTIFY,
     replyTo: data.email || undefined,
     subject: `Contact site${data.subject ? " — " + data.subject : ""}`,
     text:
