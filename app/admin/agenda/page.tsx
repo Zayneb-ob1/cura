@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "../gestion.module.css";
-import AdminSidebar from "../gestion-sidebar";
+import { useAdminLanguage } from "../admin-i18n";
+import { AdminPageHeader, AdminPage } from "../admin-shell";
 
 const DEFAULT_CALENDAR_ID = "contact@curadental.be";
 const DEFAULT_CALENDAR_TIME_ZONE = "Europe/Brussels";
@@ -24,9 +25,9 @@ type AppointmentPage = {
   pagination?: { totalPages?: number };
 };
 
-const STATUS_META: Record<string, { label: string; background: string; color: string }> = {
-  pending: { label: "En attente", background: "#fdf3d8", color: "#8a6d1a" },
-  confirmed: { label: "Confirmée", background: "#dcefe3", color: "#2f6f4f" },
+const STATUS_META: Record<string, { fr: string; nl: string; background: string; color: string }> = {
+  pending: { fr: "En attente", nl: "In afwachting", background: "#fdf3d8", color: "#8a6d1a" },
+  confirmed: { fr: "Confirmée", nl: "Bevestigd", background: "#dcefe3", color: "#2f6f4f" },
 };
 
 function dayOnly(value?: string) {
@@ -37,7 +38,7 @@ function reservationTime(reservation: AgendaReservation) {
   const value = reservation.status === "confirmed"
     ? reservation.slotTime || reservation.time
     : reservation.time || reservation.slotTime;
-  return value?.trim() || "À préciser";
+  return value?.trim() || "";
 }
 
 function reservationTimestamp(reservation: AgendaReservation) {
@@ -55,12 +56,12 @@ function localDay() {
   return `${year}-${month}-${day}`;
 }
 
-function formatAgendaDay(value?: string) {
+function formatAgendaDay(value: string | undefined, locale: string, fallback: string) {
   const day = dayOnly(value);
-  if (!day) return "Date à préciser";
+  if (!day) return fallback;
   const parsed = new Date(`${day}T12:00:00`);
   if (Number.isNaN(parsed.getTime())) return day;
-  return new Intl.DateTimeFormat("fr-BE", {
+  return new Intl.DateTimeFormat(locale, {
     weekday: "short",
     day: "2-digit",
     month: "short",
@@ -69,6 +70,12 @@ function formatAgendaDay(value?: string) {
 }
 
 export default function AgendaPage() {
+  return <AdminPage active="agenda">{() => <AgendaContent />}</AdminPage>;
+}
+
+function AgendaContent() {
+  const { t, language } = useAdminLanguage();
+  const locale = language === "nl" ? "nl-BE" : "fr-BE";
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [reservations, setReservations] = useState<AgendaReservation[]>([]);
   const [agendaLoading, setAgendaLoading] = useState(true);
@@ -113,7 +120,7 @@ export default function AgendaPage() {
         setReservations([]);
         return;
       }
-      if (!firstResponse.ok) throw new Error("Impossible de charger les réservations.");
+      if (!firstResponse.ok) throw new Error("LOAD_FAILED");
 
       const firstPage = await firstResponse.json() as AppointmentPage;
       const allItems = Array.isArray(firstPage.items) ? [...firstPage.items] : [];
@@ -124,7 +131,7 @@ export default function AgendaPage() {
           credentials: "same-origin",
           cache: "no-store",
         });
-        if (!response.ok) throw new Error("Impossible de charger toutes les réservations.");
+        if (!response.ok) throw new Error("LOAD_FAILED");
         const payload = await response.json() as AppointmentPage;
         if (Array.isArray(payload.items)) allItems.push(...payload.items);
       }
@@ -141,7 +148,7 @@ export default function AgendaPage() {
         .sort((left, right) => reservationTimestamp(left) - reservationTimestamp(right)));
     } catch (error) {
       if (sequence === loadSequence.current) {
-        setAgendaError(error instanceof Error ? error.message : "Impossible de charger l’agenda.");
+        setAgendaError(error instanceof Error && error.message !== "LOAD_FAILED" ? error.message : "LOAD_FAILED");
       }
     } finally {
       if (sequence === loadSequence.current) setAgendaLoading(false);
@@ -176,84 +183,81 @@ export default function AgendaPage() {
   }, [loadAgenda]);
 
   if (authed === false) {
-    return <div className={styles.layout}><AdminSidebar /><div className={styles.content}><p>Session expirée. <a className={styles.back} href="/admin">Se reconnecter</a></p></div></div>;
+    return <p>{t("Session expirée.", "Sessie verlopen.")} <a className={styles.back} href="/admin">{t("Se reconnecter", "Opnieuw aanmelden")}</a></p>;
   }
 
   return (
-    <div className={styles.layout}>
-      <AdminSidebar />
-      <div className={styles.content}>
       <div className={styles.inner}>
-        <div className={styles.header}>
-          <div>
-            <a className={styles.back} href="/admin">← Retour au dashboard</a>
-            <h1 className={styles.title}>Agenda</h1>
-            <p className={styles.subtitle}>Les réservations à venir sont chargées automatiquement depuis le dashboard.</p>
-          </div>
-          <div className={styles.calendarActions}>
-            <span className={styles.chip}>Agenda · {calendarId}</span>
-            <a className={styles.calendarLink} href={googleCalendarUrl} target="_blank" rel="noreferrer">
-              Ouvrir dans Google Agenda <span aria-hidden="true">↗</span>
-            </a>
-          </div>
-        </div>
+        <AdminPageHeader
+          eyebrow={t("Activité", "Activiteit")}
+          title={t("Agenda", "Agenda")}
+          description={t("Les réservations à venir sont chargées automatiquement depuis le tableau de bord.", "De komende reservaties worden automatisch geladen vanuit het dashboard.")}
+          actions={(
+            <div className={styles.calendarActions}>
+              <span className={styles.chip}>{t("Agenda", "Agenda")} · {calendarId}</span>
+              <a className={styles.calendarLink} href={googleCalendarUrl} target="_blank" rel="noreferrer">
+                {t("Ouvrir dans Google Agenda", "Openen in Google Agenda")} <span aria-hidden="true">↗</span>
+              </a>
+            </div>
+          )}
+        />
 
         <div className={styles.agendaStack}>
           <section aria-labelledby="agenda-reservations-title">
             <div className={styles.agendaSectionHeader}>
               <div>
-                <p className={styles.agendaEyebrow}>Réservations</p>
-                <h2 id="agenda-reservations-title">Agenda des réservations</h2>
-                <p>Demandes en attente et réservations confirmées, classées par date et heure.</p>
+                <p className={styles.agendaEyebrow}>{t("Réservations", "Reservaties")}</p>
+                <h2 id="agenda-reservations-title">{t("Agenda des réservations", "Agenda van de reservaties")}</h2>
+                <p>{t("Demandes en attente et réservations confirmées, classées par date et heure.", "Aanvragen in afwachting en bevestigde reservaties, gesorteerd op datum en uur.")}</p>
               </div>
               <div className={styles.agendaSectionActions}>
-                <span className={styles.chip}>{reservations.length} à venir</span>
+                <span className={styles.chip}>{reservations.length} {t("à venir", "gepland")}</span>
                 <button className={styles.filterBtn} type="button" onClick={() => void loadAgenda()} disabled={agendaLoading}>
-                  {agendaLoading ? "Actualisation…" : "Actualiser"}
+                  {agendaLoading ? t("Actualisation…", "Vernieuwen…") : t("Actualiser", "Vernieuwen")}
                 </button>
               </div>
             </div>
 
-            {agendaError && <p className={styles.agendaError} role="alert">{agendaError}</p>}
+            {agendaError && <p className={styles.agendaError} role="alert">{agendaError === "LOAD_FAILED" ? t("Impossible de charger l’agenda.", "De agenda kon niet worden geladen.") : agendaError}</p>}
 
             <div className={styles.card} aria-live="polite">
-              <div className={styles.tableWrap} role="region" aria-label="Agenda des réservations" tabIndex={0}>
-                <table className={`${styles.table} ${styles.agendaTable}`}>
+              <div className={styles.tableWrap} role="region" aria-label={t("Agenda des réservations", "Agenda van de reservaties")} tabIndex={0}>
+                <table className={`${styles.table} ${styles.agendaTable} ${styles.stackTable}`}>
                   <thead>
                     <tr>
-                      <th>Date et heure</th>
-                      <th>Patient</th>
-                      <th>Soin</th>
-                      <th>Durée</th>
-                      <th>Statut</th>
+                      <th>{t("Date et heure", "Datum en uur")}</th>
+                      <th>{t("Patient", "Patiënt")}</th>
+                      <th>{t("Soin", "Behandeling")}</th>
+                      <th>{t("Durée", "Duur")}</th>
+                      <th>{t("Statut", "Status")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {agendaLoading ? (
-                      <tr><td className={styles.empty} colSpan={5}>Chargement des réservations…</td></tr>
+                      <tr><td className={styles.empty} colSpan={5}>{t("Chargement des réservations…", "Reservaties laden…")}</td></tr>
                     ) : reservations.length === 0 ? (
-                      <tr><td className={styles.empty} colSpan={5}>Aucune réservation à venir.</td></tr>
+                      <tr><td className={styles.empty} colSpan={5}>{t("Aucune réservation à venir.", "Geen komende reservaties.")}</td></tr>
                     ) : reservations.map((reservation) => {
                       const status = reservation.status === "confirmed" ? "confirmed" : "pending";
                       const statusMeta = STATUS_META[status];
                       const day = dayOnly(reservation.day);
-                      const time = reservationTime(reservation);
+                      const time = reservationTime(reservation) || t("À préciser", "Nog te bepalen");
                       const dateTime = /^\d{2}:\d{2}/.test(time) ? `${day}T${time.slice(0, 5)}` : day;
-                      const patient = `${reservation.firstName ?? ""} ${reservation.lastName ?? ""}`.trim() || "Patient";
+                      const patient = `${reservation.firstName ?? ""} ${reservation.lastName ?? ""}`.trim() || t("Patient", "Patiënt");
                       return (
                         <tr key={reservation.id}>
-                          <td>
+                          <td data-label={t("Date et heure", "Datum en uur")}>
                             <time className={styles.agendaDate} dateTime={dateTime}>
-                              <strong>{formatAgendaDay(reservation.day)}</strong>
+                              <strong>{formatAgendaDay(reservation.day, locale, t("Date à préciser", "Datum nog te bepalen"))}</strong>
                               <span>{time}</span>
                             </time>
                           </td>
-                          <td><span className={styles.name}>{patient}</span></td>
-                          <td>{reservation.care?.trim() || "Soin à préciser"}</td>
-                          <td>{reservation.durationMin ? `${reservation.durationMin} min` : "—"}</td>
-                          <td>
+                          <td data-label={t("Patient", "Patiënt")}><span className={styles.name}>{patient}</span></td>
+                          <td data-label={t("Soin", "Behandeling")}>{reservation.care?.trim() || t("Soin à préciser", "Behandeling nog te bepalen")}</td>
+                          <td data-label={t("Durée", "Duur")}>{reservation.durationMin ? `${reservation.durationMin} min` : "—"}</td>
+                          <td data-label={t("Statut", "Status")}>
                             <span className={styles.badge} style={{ background: statusMeta.background, color: statusMeta.color }}>
-                              {statusMeta.label}
+                              {t(statusMeta.fr, statusMeta.nl)}
                             </span>
                           </td>
                         </tr>
@@ -269,22 +273,20 @@ export default function AgendaPage() {
             <div className={styles.agendaSectionHeader}>
               <div>
                 <p className={styles.agendaEyebrow}>Google Calendar</p>
-                <h2 id="google-calendar-title">Agenda Google du cabinet</h2>
-                <p>Connectez-vous au compte Google autorisé si cet agenda privé le demande.</p>
+                <h2 id="google-calendar-title">{t("Agenda Google du cabinet", "Google Agenda van de praktijk")}</h2>
+                <p>{t("Connectez-vous au compte Google autorisé si cet agenda privé le demande.", "Meld u aan met het toegestane Google-account als deze privéagenda daarom vraagt.")}</p>
               </div>
             </div>
             <div className={`${styles.card} ${styles.frameCard}`}>
               <iframe
                 className={styles.frame}
                 src={src}
-                title="Google Agenda CURA"
+                title={t("Google Agenda CURA", "Google Agenda CURA")}
                 referrerPolicy="strict-origin-when-cross-origin"
               />
             </div>
           </section>
         </div>
       </div>
-      </div>
-    </div>
   );
 }

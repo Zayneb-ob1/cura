@@ -4,7 +4,8 @@ import Link from "next/link";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./admin.module.css";
-import DashboardNavigation from "./dashboard-navigation";
+import { useAdminLanguage } from "./admin-i18n";
+import { AdminLoading, AdminLoginScreen, AdminShell, useAdminSession } from "./admin-shell";
 import reservationStyles from "./gestion.module.css";
 
 type DataSection = "contacts" | "appointments" | "reviews" | "doctors";
@@ -104,21 +105,22 @@ type ClinicSettings = {
   emergencyNl: string;
 };
 
-const sections: Array<{ id: AdminSection; label: string; icon: string }> = [
-  { id: "reviews", label: "Avis", icon: "☆" },
-  { id: "doctors", label: "Cabinet / Équipe", icon: "+" },
-  { id: "forms", label: "Formulaires", icon: "▤" },
-  { id: "site", label: "Informations du site", icon: "↗" },
-  { id: "contacts", label: "Messages", icon: "✉" },
-  { id: "blocked-ips", label: "Adresses IP bloquées", icon: "⊘" },
-  { id: "overview", label: "Vue d’ensemble", icon: "⌂" },
+const sections: Array<{ id: AdminSection; label: string; labelNl: string }> = [
+  { id: "reviews", label: "Avis", labelNl: "Beoordelingen" },
+  { id: "doctors", label: "Cabinet / Équipe", labelNl: "Praktijk / Team" },
+  { id: "forms", label: "Formulaires", labelNl: "Formulieren" },
+  { id: "site", label: "Informations du site", labelNl: "Website-informatie" },
+  { id: "contacts", label: "Messages", labelNl: "Berichten" },
+  { id: "blocked-ips", label: "Adresses IP bloquées", labelNl: "Geblokkeerde IP-adressen" },
+  { id: "overview", label: "Vue d’ensemble", labelNl: "Overzicht" },
+  { id: "appointments", label: "Réservations", labelNl: "Reservaties" },
 ];
 
 const hashSections = new Set<AdminSection>(["overview", "reviews", "doctors", "forms", "site", "contacts", "blocked-ips"]);
 
-const formLabels: Record<FormType, { name: string; href: string }> = {
-  contact: { name: "Formulaire de contact", href: "/contact" },
-  appointment: { name: "Formulaire de rendez-vous", href: "/rendez-vous" },
+const formLabels: Record<FormType, { name: string; nameNl: string; href: string }> = {
+  contact: { name: "Formulaire de contact", nameNl: "Contactformulier", href: "/contact" },
+  appointment: { name: "Formulaire de rendez-vous", nameNl: "Afspraakformulier", href: "/rendez-vous" },
 };
 
 const lockedFormFields: Record<FormType, ReadonlySet<string>> = {
@@ -127,13 +129,13 @@ const lockedFormFields: Record<FormType, ReadonlySet<string>> = {
 };
 
 const sitePages = [
-  ["Accueil", "/"],
-  ["Nos soins", "/soins"],
-  ["Le cabinet", "/cabinet"],
-  ["Nouveau patient", "/nouveau-patient"],
-  ["Conseils & FAQ", "/conseils"],
-  ["Contact", "/contact"],
-  ["Prendre rendez-vous", "/rendez-vous"],
+  ["Accueil", "Home", "/"],
+  ["Nos soins", "Onze behandelingen", "/soins"],
+  ["Le cabinet", "De praktijk", "/cabinet"],
+  ["Nouveau patient", "Nieuwe patiënt", "/nouveau-patient"],
+  ["Conseils & FAQ", "Tips & FAQ", "/conseils"],
+  ["Contact", "Contact", "/contact"],
+  ["Prendre rendez-vous", "Afspraak maken", "/rendez-vous"],
 ] as const;
 
 const emptyOverview: OverviewData = {
@@ -161,11 +163,11 @@ const emptyAppointmentPreviews: AppointmentPreviews = {
   reservations: [],
 };
 
-const appointmentStatusMeta: Record<AppointmentStatus, { label: string; background: string; color: string }> = {
-  pending: { label: "En attente", background: "#fdf3d8", color: "#8a6d1a" },
-  confirmed: { label: "Confirmé", background: "#dcefe3", color: "#2f6f4f" },
-  completed: { label: "Terminé", background: "#ecebe6", color: "#62665f" },
-  cancelled: { label: "Annulé", background: "#f7e4df", color: "#8b3428" },
+const appointmentStatusMeta: Record<AppointmentStatus, { label: string; labelNl: string; background: string; color: string }> = {
+  pending: { label: "En attente", labelNl: "In afwachting", background: "#fdf3d8", color: "#8a6d1a" },
+  confirmed: { label: "Confirmé", labelNl: "Bevestigd", background: "#dcefe3", color: "#2f6f4f" },
+  completed: { label: "Terminé", labelNl: "Afgerond", background: "#ecebe6", color: "#62665f" },
+  cancelled: { label: "Annulé", labelNl: "Geannuleerd", background: "#f7e4df", color: "#8b3428" },
 };
 
 const emptyPagination: Pagination = {
@@ -215,11 +217,11 @@ function asText(value: unknown, fallback = "—") {
   return fallback;
 }
 
-function formatDate(value: unknown) {
+function formatDate(value: unknown, locale = "fr-BE") {
   if (typeof value !== "string") return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("fr-BE", {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
@@ -230,10 +232,10 @@ function dateOnly(value: unknown) {
   return value.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? "";
 }
 
-function appointmentClock(item: AdminItem) {
+function appointmentClock(item: AdminItem, fallback = "À préciser") {
   const confirmedTime = asText(item.slotTime, "");
   if (/^\d{2}:\d{2}/.test(confirmedTime)) return confirmedTime.slice(0, 5);
-  return asText(item.time, "À préciser");
+  return asText(item.time, fallback);
 }
 
 function appointmentTimestamp(item: AdminItem) {
@@ -244,16 +246,16 @@ function appointmentTimestamp(item: AdminItem) {
   return Number.isNaN(timestamp) ? Number.POSITIVE_INFINITY : timestamp;
 }
 
-function isUpcomingAppointment(item: AdminItem) {
-  return item.status === "confirmed" && appointmentTimestamp(item) >= Date.now();
+function isUpcomingAppointment(item: AdminItem, now: number) {
+  return item.status === "confirmed" && appointmentTimestamp(item) >= now;
 }
 
-function formatAppointmentDay(value: unknown) {
+function formatAppointmentDay(value: unknown, locale = "fr-BE", fallback = "Date à préciser") {
   const day = dateOnly(value);
-  if (!day) return "Date à préciser";
+  if (!day) return fallback;
   const parsed = new Date(`${day}T12:00:00`);
   if (Number.isNaN(parsed.getTime())) return day;
-  return new Intl.DateTimeFormat("fr-BE", {
+  return new Intl.DateTimeFormat(locale, {
     weekday: "short",
     day: "2-digit",
     month: "short",
@@ -265,16 +267,21 @@ function appointmentStatus(value: unknown): AppointmentStatus {
   return value === "confirmed" || value === "completed" || value === "cancelled" ? value : "pending";
 }
 
-async function getErrorMessage(response: Response) {
+async function getErrorMessage(response: Response, fallback = "Une erreur est survenue.") {
   try {
     const payload = (await response.json()) as { error?: string; message?: string };
-    return payload.error ?? payload.message ?? "Une erreur est survenue.";
+    return payload.error ?? payload.message ?? fallback;
   } catch {
-    return "Une erreur est survenue.";
+    return fallback;
   }
 }
 
 export default function AdminPage() {
+  const { t, language } = useAdminLanguage();
+  const locale = language === "nl" ? "nl-BE" : "fr-BE";
+  const session = useAdminSession();
+  const tRef = useRef(t);
+  useEffect(() => { tRef.current = t; }, [t]);
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [activeSection, setActiveSection] = useState<AdminSection>("overview");
   const [sectionReady, setSectionReady] = useState(false);
@@ -292,7 +299,6 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [credentials, setCredentials] = useState({ username: "", password: "" });
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState<string | number | null>(null);
   const [reviewDraft, setReviewDraft] = useState<ReviewDraft>(emptyReview);
@@ -356,7 +362,7 @@ export default function AdminPage() {
         }
 
         const failedResponse = overviewResponses.find((response) => !response.ok);
-        if (failedResponse) throw new Error(await getErrorMessage(failedResponse));
+        if (failedResponse) throw new Error(await getErrorMessage(failedResponse, tRef.current("Une erreur est survenue.", "Er is een fout opgetreden.")));
 
         const payloads = await Promise.all(
           responses.map((response) => response.json() as Promise<{ items?: AdminItem[]; pagination?: Pagination }>),
@@ -396,7 +402,7 @@ export default function AdminPage() {
         ).values());
         setAppointmentPreviews({
           upcoming: confirmedItems
-            .filter(isUpcomingAppointment)
+            .filter((item) => isUpcomingAppointment(item, Date.now()))
             .sort((left, right) => appointmentTimestamp(left) - appointmentTimestamp(right))
             .slice(0, 10),
           reservations: reservationOverview
@@ -425,9 +431,9 @@ export default function AdminPage() {
           setItems([]);
           return;
         }
-        if (!response.ok) throw new Error(await getErrorMessage(response));
+        if (!response.ok) throw new Error(await getErrorMessage(response, tRef.current("Une erreur est survenue.", "Er is een fout opgetreden.")));
         const payload = (await response.json()) as { settings?: ClinicSettings };
-        if (!payload.settings) throw new Error("Informations du cabinet incomplètes.");
+        if (!payload.settings) throw new Error(tRef.current("Informations du cabinet incomplètes.", "Praktijkgegevens onvolledig."));
         setClinicSettings(payload.settings);
         setItems([]);
         setPagination(emptyPagination);
@@ -446,11 +452,11 @@ export default function AdminPage() {
           setFormConfigs(null);
           return;
         }
-        if (!response.ok) throw new Error(await getErrorMessage(response));
+        if (!response.ok) throw new Error(await getErrorMessage(response, tRef.current("Une erreur est survenue.", "Er is een fout opgetreden.")));
 
         const payload = (await response.json()) as { forms?: FormConfigs };
         if (!payload.forms?.contact || !payload.forms?.appointment) {
-          throw new Error("Configuration des formulaires incomplète.");
+          throw new Error(tRef.current("Configuration des formulaires incomplète.", "Formulierconfiguratie onvolledig."));
         }
         setFormConfigs(payload.forms);
         setItems([]);
@@ -471,7 +477,7 @@ export default function AdminPage() {
         return;
       }
 
-      if (!response.ok) throw new Error(await getErrorMessage(response));
+      if (!response.ok) throw new Error(await getErrorMessage(response, tRef.current("Une erreur est survenue.", "Er is een fout opgetreden.")));
 
       const payload = (await response.json()) as { items?: AdminItem[]; pagination?: Pagination };
       setItems(Array.isArray(payload.items) ? payload.items : []);
@@ -480,7 +486,7 @@ export default function AdminPage() {
       currentPage.current = nextPagination.page;
       setAuthenticated(true);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Impossible de charger les données.");
+      setError(requestError instanceof Error ? requestError.message : tRef.current("Impossible de charger les données.", "De gegevens konden niet worden geladen."));
     } finally {
       setLoading(false);
     }
@@ -539,44 +545,10 @@ export default function AdminPage() {
     };
   }, [activeSection, authenticated, loadItems]);
 
-  async function handleLogin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaving(true);
+  async function handleLoginSuccess() {
     setError("");
-
-    try {
-      const response = await fetch("/api/admin/login", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(credentials),
-      });
-
-      if (!response.ok) throw new Error(await getErrorMessage(response));
-
-      setCredentials({ username: "", password: "" });
-      setAuthenticated(true);
-      await loadItems(activeSection);
-    } catch (requestError) {
-      setAuthenticated(false);
-      setError(requestError instanceof Error ? requestError.message : "Connexion impossible.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleLogout() {
-    setSaving(true);
-    try {
-      await fetch("/api/admin/logout", {
-        method: "POST",
-        credentials: "same-origin",
-      });
-    } finally {
-      setAuthenticated(false);
-      setItems([]);
-      setSaving(false);
-    }
+    setAuthenticated(true);
+    await Promise.all([session.refresh(), loadItems(activeSection)]);
   }
 
   function openAppointmentAction(item: AdminItem, mode: AppointmentActionMode) {
@@ -631,29 +603,29 @@ export default function AdminPage() {
         setAuthenticated(false);
         return;
       }
-      if (!response.ok) throw new Error(payload.error || "Impossible de mettre à jour la réservation.");
+      if (!response.ok) throw new Error(payload.error || t("Impossible de mettre à jour la réservation.", "De reservatie kon niet worden bijgewerkt."));
 
       const mode = appointmentAction.mode;
       setAppointmentAction(null);
       notifyAppointmentUpdate();
       await loadItems("overview");
       const warnings: string[] = [];
-      if (payload.emailSent === false) warnings.push("l’e-mail au patient n’a pas été envoyé");
-      if (mode === "confirm" && payload.calendarConfigured === false) warnings.push("Google Agenda n’est pas configuré");
-      if (mode === "confirm" && payload.calendarConfigured && payload.calendarSynced === false) warnings.push("la synchronisation Google Agenda a échoué");
+      if (payload.emailSent === false) warnings.push(t("l’e-mail au patient n’a pas été envoyé", "de e-mail naar de patiënt is niet verzonden"));
+      if (mode === "confirm" && payload.calendarConfigured === false) warnings.push(t("Google Agenda n’est pas configuré", "Google Agenda is niet geconfigureerd"));
+      if (mode === "confirm" && payload.calendarConfigured && payload.calendarSynced === false) warnings.push(t("la synchronisation Google Agenda a échoué", "de synchronisatie met Google Agenda is mislukt"));
       setNotice(warnings.length > 0
-        ? `Réservation enregistrée, mais ${warnings.join(" et ")}.`
-        : mode === "confirm" ? "Réservation confirmée et ajoutée à l’Agenda." : "Nouveau créneau proposé au patient.");
+        ? t(`Réservation enregistrée, mais ${warnings.join(" et ")}.`, `Reservatie opgeslagen, maar ${warnings.join(" en ")}.`)
+        : mode === "confirm" ? t("Réservation confirmée et ajoutée à l’Agenda.", "Reservatie bevestigd en toegevoegd aan de agenda.") : t("Nouveau créneau proposé au patient.", "Nieuw tijdstip voorgesteld aan de patiënt."));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Impossible de mettre à jour la réservation.");
+      setError(requestError instanceof Error ? requestError.message : t("Impossible de mettre à jour la réservation.", "De reservatie kon niet worden bijgewerkt."));
     } finally {
       setSaving(false);
     }
   }
 
   async function cancelAppointment(item: AdminItem) {
-    const patient = `${asText(item.firstName, "Patient")} ${asText(item.lastName, "")}`.trim();
-    if (!window.confirm(`Annuler la réservation de ${patient} et prévenir le patient par e-mail ?`)) return;
+    const patient = `${asText(item.firstName, t("Patient", "Patiënt"))} ${asText(item.lastName, "")}`.trim();
+    if (!window.confirm(t(`Annuler la réservation de ${patient} et prévenir le patient par e-mail ?`, `De reservatie van ${patient} annuleren en de patiënt per e-mail verwittigen?`))) return;
     setSaving(true);
     setError("");
     setNotice("");
@@ -670,14 +642,14 @@ export default function AdminPage() {
         setAuthenticated(false);
         return;
       }
-      if (!response.ok) throw new Error(payload.error || "Impossible d’annuler la réservation.");
+      if (!response.ok) throw new Error(payload.error || t("Impossible d’annuler la réservation.", "De reservatie kon niet worden geannuleerd."));
       notifyAppointmentUpdate();
       await loadItems("overview");
       setNotice(payload.emailSent === false
-        ? "Réservation annulée, mais l’e-mail au patient n’a pas été envoyé."
-        : "Réservation annulée et patient prévenu.");
+        ? t("Réservation annulée, mais l’e-mail au patient n’a pas été envoyé.", "Reservatie geannuleerd, maar de e-mail naar de patiënt is niet verzonden.")
+        : t("Réservation annulée et patient prévenu.", "Reservatie geannuleerd en patiënt verwittigd."));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Impossible d’annuler la réservation.");
+      setError(requestError instanceof Error ? requestError.message : t("Impossible d’annuler la réservation.", "De reservatie kon niet worden geannuleerd."));
     } finally {
       setSaving(false);
     }
@@ -700,10 +672,10 @@ export default function AdminPage() {
         setAuthenticated(false);
         return;
       }
-      if (!response.ok) throw new Error(await getErrorMessage(response));
+      if (!response.ok) throw new Error(await getErrorMessage(response, tRef.current("Une erreur est survenue.", "Er is een fout opgetreden.")));
       await loadItems(activeSection);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Mise à jour impossible.");
+      setError(requestError instanceof Error ? requestError.message : t("Mise à jour impossible.", "Bijwerken mislukt."));
     } finally {
       setSaving(false);
     }
@@ -711,7 +683,7 @@ export default function AdminPage() {
 
   async function deleteItem(id: string | number) {
     if (!isDataSection(activeSection)) return;
-    if (!window.confirm("Supprimer définitivement cet élément ?")) return;
+    if (!window.confirm(t("Supprimer définitivement cet élément ?", "Dit element definitief verwijderen?"))) return;
     setSaving(true);
     setError("");
 
@@ -725,10 +697,10 @@ export default function AdminPage() {
         setAuthenticated(false);
         return;
       }
-      if (!response.ok) throw new Error(await getErrorMessage(response));
+      if (!response.ok) throw new Error(await getErrorMessage(response, tRef.current("Une erreur est survenue.", "Er is een fout opgetreden.")));
       await loadItems(activeSection);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Suppression impossible.");
+      setError(requestError instanceof Error ? requestError.message : t("Suppression impossible.", "Verwijderen mislukt."));
     } finally {
       setSaving(false);
     }
@@ -751,19 +723,19 @@ export default function AdminPage() {
         setAuthenticated(false);
         return;
       }
-      if (!response.ok) throw new Error(await getErrorMessage(response));
+      if (!response.ok) throw new Error(await getErrorMessage(response, tRef.current("Une erreur est survenue.", "Er is een fout opgetreden.")));
       setBlockedIpDraft("");
       await loadItems("blocked-ips");
-      setNotice("Adresse IP bloquée.");
+      setNotice(t("Adresse IP bloquée.", "IP-adres geblokkeerd."));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Impossible de bloquer cette adresse IP.");
+      setError(requestError instanceof Error ? requestError.message : t("Impossible de bloquer cette adresse IP.", "Dit IP-adres kon niet worden geblokkeerd."));
     } finally {
       setSaving(false);
     }
   }
 
   async function unblockIp(id: string | number, ipAddress: string) {
-    if (!window.confirm(`Débloquer l’adresse IP ${ipAddress} ?`)) return;
+    if (!window.confirm(t(`Débloquer l’adresse IP ${ipAddress} ?`, `IP-adres ${ipAddress} deblokkeren?`))) return;
     setSaving(true);
     setError("");
     setNotice("");
@@ -777,11 +749,11 @@ export default function AdminPage() {
         setAuthenticated(false);
         return;
       }
-      if (!response.ok) throw new Error(await getErrorMessage(response));
+      if (!response.ok) throw new Error(await getErrorMessage(response, tRef.current("Une erreur est survenue.", "Er is een fout opgetreden.")));
       await loadItems("blocked-ips");
-      setNotice("Adresse IP débloquée.");
+      setNotice(t("Adresse IP débloquée.", "IP-adres gedeblokkeerd."));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Impossible de débloquer cette adresse IP.");
+      setError(requestError instanceof Error ? requestError.message : t("Impossible de débloquer cette adresse IP.", "Dit IP-adres kon niet worden gedeblokkeerd."));
     } finally {
       setSaving(false);
     }
@@ -829,14 +801,14 @@ export default function AdminPage() {
         setAuthenticated(false);
         return;
       }
-      if (!response.ok) throw new Error(await getErrorMessage(response));
+      if (!response.ok) throw new Error(await getErrorMessage(response, tRef.current("Une erreur est survenue.", "Er is een fout opgetreden.")));
 
       setShowReviewForm(false);
       setEditingReviewId(null);
       setReviewDraft(emptyReview);
       await loadItems("reviews");
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Enregistrement impossible.");
+      setError(requestError instanceof Error ? requestError.message : t("Enregistrement impossible.", "Opslaan mislukt."));
     } finally {
       setSaving(false);
     }
@@ -884,14 +856,14 @@ export default function AdminPage() {
         setAuthenticated(false);
         return;
       }
-      if (!response.ok) throw new Error(await getErrorMessage(response));
+      if (!response.ok) throw new Error(await getErrorMessage(response, tRef.current("Une erreur est survenue.", "Er is een fout opgetreden.")));
 
       setShowDoctorForm(false);
       setEditingDoctorId(null);
       setDoctorDraft(emptyDoctor);
       await loadItems("doctors");
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Enregistrement impossible.");
+      setError(requestError instanceof Error ? requestError.message : t("Enregistrement impossible.", "Opslaan mislukt."));
     } finally {
       setSaving(false);
     }
@@ -936,13 +908,13 @@ export default function AdminPage() {
         setAuthenticated(false);
         return;
       }
-      if (!response.ok) throw new Error(await getErrorMessage(response));
+      if (!response.ok) throw new Error(await getErrorMessage(response, tRef.current("Une erreur est survenue.", "Er is een fout opgetreden.")));
 
       const payload = (await response.json()) as { form?: FormConfig };
       if (payload.form) updateFormConfig(formType, payload.form);
-      setNotice(`${formLabels[formType].name} enregistré.`);
+      setNotice(t(`${formLabels[formType].name} enregistré.`, `${formLabels[formType].nameNl} opgeslagen.`));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Enregistrement impossible.");
+      setError(requestError instanceof Error ? requestError.message : t("Enregistrement impossible.", "Opslaan mislukt."));
     } finally {
       setSaving(false);
     }
@@ -966,12 +938,12 @@ export default function AdminPage() {
         setAuthenticated(false);
         return;
       }
-      if (!response.ok) throw new Error(await getErrorMessage(response));
+      if (!response.ok) throw new Error(await getErrorMessage(response, tRef.current("Une erreur est survenue.", "Er is een fout opgetreden.")));
       const payload = (await response.json()) as { settings?: ClinicSettings };
       setClinicSettings(payload.settings ?? clinicSettings);
-      setNotice("Informations du cabinet enregistrées.");
+      setNotice(t("Informations du cabinet enregistrées.", "Praktijkgegevens opgeslagen."));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Enregistrement impossible.");
+      setError(requestError instanceof Error ? requestError.message : t("Enregistrement impossible.", "Opslaan mislukt."));
     } finally {
       setSaving(false);
     }
@@ -991,24 +963,24 @@ export default function AdminPage() {
     ...overviewData.contacts.map((item) => ({
       id: `contact-${item.id}`,
       section: "contacts" as AdminSection,
-      type: "Message",
-      title: asText(item.name, "Nouveau message"),
-      detail: asText(item.subject, "Sans objet"),
+      type: t("Message", "Bericht"),
+      title: asText(item.name, t("Nouveau message", "Nieuw bericht")),
+      detail: asText(item.subject, t("Sans objet", "Geen onderwerp")),
       date: item.createdAt,
     })),
     ...overviewData.appointments.map((item) => ({
       id: `appointment-${item.id}`,
       href: "/admin/reservations",
-      type: "Réservation",
-      title: `${asText(item.firstName, "Patient")} ${asText(item.lastName, "")}`.trim(),
-      detail: asText(item.care, "Soin à préciser"),
+      type: t("Réservation", "Reservatie"),
+      title: `${asText(item.firstName, t("Patient", "Patiënt"))} ${asText(item.lastName, "")}`.trim(),
+      detail: asText(item.care, t("Soin à préciser", "Behandeling nog te bepalen")),
       date: item.createdAt,
     })),
     ...overviewData.reviews.map((item) => ({
       id: `review-${item.id}`,
       section: "reviews" as AdminSection,
-      type: "Avis",
-      title: asText(item.name, "Nouvel avis"),
+      type: t("Avis", "Beoordeling"),
+      title: asText(item.name, t("Nouvel avis", "Nieuwe beoordeling")),
       detail: `${asText(item.rating, "5")} / 5`,
       date: item.createdAt,
     })),
@@ -1016,117 +988,49 @@ export default function AdminPage() {
     .sort((a, b) => new Date(asText(b.date, "0")).getTime() - new Date(asText(a.date, "0")).getTime())
     .slice(0, 6);
 
-  if (authenticated === null) {
-    return (
-      <main id="main-content" tabIndex={-1} className={styles.loginPage}>
-        <div className={styles.loadingCard}>Vérification de la session…</div>
-      </main>
-    );
-  }
+  if (authenticated === null) return <AdminLoading />;
 
-  if (!authenticated) {
-    return (
-      <main id="main-content" tabIndex={-1} className={styles.loginPage}>
-        <section className={styles.loginCard} aria-labelledby="admin-login-title">
-          <div className={styles.brand}>CURA</div>
-          <p className={styles.eyebrow}>Administration</p>
-          <h1 id="admin-login-title">Connexion</h1>
-          <p className={styles.loginCopy}>Accédez aux demandes, rendez-vous et avis du cabinet.</p>
-          {error && <p className={styles.error} role="alert">{error}</p>}
-          <form onSubmit={handleLogin} className={styles.loginForm}>
-            <label>
-              E-mail
-              <input
-                required
-                type="email"
-                autoComplete="username"
-                value={credentials.username}
-                onChange={(event) => setCredentials((current) => ({ ...current, username: event.target.value }))}
-              />
-            </label>
-            <label>
-              Mot de passe
-              <input
-                required
-                type="password"
-                autoComplete="current-password"
-                value={credentials.password}
-                onChange={(event) => setCredentials((current) => ({ ...current, password: event.target.value }))}
-              />
-            </label>
-            <button className={styles.primaryButton} type="submit" disabled={saving}>
-              {saving ? "Connexion…" : "Se connecter"}
-            </button>
-          </form>
-        </section>
-      </main>
-    );
-  }
+  if (!authenticated) return <AdminLoginScreen onSuccess={handleLoginSuccess} />;
 
   return (
-    <main id="main-content" tabIndex={-1} className={styles.dashboard}>
-      <header className={styles.topbar}>
-        <div>
-          <span className={styles.brand}>CURA</span>
-          <span className={styles.adminLabel}>Administration</span>
-        </div>
-        <div className={styles.topbarActions}>
-          <a className={styles.topbarLink} href="/" target="_blank" rel="noreferrer">Voir le site</a>
-          <button className={styles.secondaryButton} type="button" onClick={handleLogout} disabled={saving}>
-            Se déconnecter
-          </button>
-        </div>
-      </header>
-
-      <div className={styles.shell}>
-        <aside className={styles.sidebar}>
-          <div className={styles.sidebarIntro}>
-            <p>Navigation</p>
-            <strong>Gestion du cabinet</strong>
-          </div>
-          <DashboardNavigation
-            activeSection={activeSection}
-            onSectionChange={(section) => {
-              setShowReviewForm(false);
-              setShowDoctorForm(false);
-              setActiveSection(section as AdminSection);
-            }}
-          />
-          <div className={styles.sidebarFooter}>
-            <span>Connecté en tant que</span>
-            <strong>Administrateur</strong>
-          </div>
-        </aside>
-
+    <AdminShell
+      active={activeSection === "appointments" ? "reservations" : activeSection}
+      user={session.user}
+      onSectionChange={(section) => {
+        setShowReviewForm(false);
+        setShowDoctorForm(false);
+        setActiveSection(section as AdminSection);
+      }}
+    >
         <section className={styles.content}>
           <div className={styles.sectionHeader}>
             <div>
-              <p className={styles.eyebrow}>Tableau de bord</p>
-              <h1>{sections.find((section) => section.id === activeSection)?.label}</h1>
+              <p className={styles.eyebrow}>{t("Tableau de bord", "Dashboard")}</p>
+              <h1>{(() => { const current = sections.find((section) => section.id === activeSection); return current ? t(current.label, current.labelNl) : ""; })()}</h1>
               <p>
                 {loading
-                  ? "Chargement…"
+                  ? t("Chargement…", "Laden…")
                   : activeSection === "overview"
-                    ? `${totalItems} éléments gérés`
+                    ? t(`${totalItems} éléments gérés`, `${totalItems} beheerde elementen`)
                     : activeSection === "forms"
-                      ? `${formConfigs ? 2 : 0} formulaires configurés`
+                      ? t(`${formConfigs ? 2 : 0} formulaires configurés`, `${formConfigs ? 2 : 0} geconfigureerde formulieren`)
                     : activeSection === "site"
-                      ? "Coordonnées et pages publiques"
-                      : `${pagination.total} élément${pagination.total === 1 ? "" : "s"}`}
+                      ? t("Coordonnées et pages publiques", "Contactgegevens en publieke pagina’s")
+                      : t(`${pagination.total} élément${pagination.total === 1 ? "" : "s"}`, `${pagination.total} element${pagination.total === 1 ? "" : "en"}`)}
               </p>
             </div>
             <div className={styles.headerActions}>
               <button className={styles.secondaryButton} type="button" onClick={() => void loadItems(activeSection)} disabled={loading}>
-                {loading ? "Actualisation…" : "Actualiser"}
+                {loading ? t("Actualisation…", "Vernieuwen…") : t("Actualiser", "Vernieuwen")}
               </button>
               {activeSection === "reviews" && (
                 <button className={styles.primaryButton} type="button" onClick={startReview}>
-                  Ajouter un avis
+                  {t("Ajouter un avis", "Beoordeling toevoegen")}
                 </button>
               )}
               {activeSection === "doctors" && (
                 <button className={styles.primaryButton} type="button" onClick={startDoctor}>
-                  Ajouter un membre
+                  {t("Ajouter un membre", "Teamlid toevoegen")}
                 </button>
               )}
             </div>
@@ -1138,22 +1042,22 @@ export default function AdminPage() {
           {activeSection === "reviews" && showReviewForm && (
             <form className={styles.reviewForm} onSubmit={saveReview}>
               <div className={styles.formHeading}>
-                <h2>{editingReviewId === null ? "Nouvel avis" : "Modifier l’avis"}</h2>
-                <button type="button" className={styles.textButton} onClick={() => setShowReviewForm(false)}>Fermer</button>
+                <h2>{editingReviewId === null ? t("Nouvel avis", "Nieuwe beoordeling") : t("Modifier l’avis", "Beoordeling bewerken")}</h2>
+                <button type="button" className={styles.textButton} onClick={() => setShowReviewForm(false)}>{t("Fermer", "Sluiten")}</button>
               </div>
               <div className={styles.formGrid}>
                 <label>
-                  Nom
+                  {t("Nom", "Naam")}
                   <input required value={reviewDraft.name} onChange={(event) => setReviewDraft((current) => ({ ...current, name: event.target.value }))} />
                 </label>
                 <label>
-                  Note
+                  {t("Note", "Score")}
                   <select value={reviewDraft.rating} onChange={(event) => setReviewDraft((current) => ({ ...current, rating: event.target.value }))}>
                     {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} / 5</option>)}
                   </select>
                 </label>
                 <label>
-                  Langue
+                  {t("Langue", "Taal")}
                   <select value={reviewDraft.language} onChange={(event) => setReviewDraft((current) => ({ ...current, language: event.target.value as "fr" | "nl" }))}>
                     <option value="fr">Français</option>
                     <option value="nl">Nederlands</option>
@@ -1161,15 +1065,15 @@ export default function AdminPage() {
                 </label>
                 <label className={styles.checkboxLabel}>
                   <input type="checkbox" checked={reviewDraft.published} onChange={(event) => setReviewDraft((current) => ({ ...current, published: event.target.checked }))} />
-                  Publié sur le site
+                  {t("Publié sur le site", "Gepubliceerd op de website")}
                 </label>
                 <label className={styles.fullField}>
-                  Témoignage
+                  {t("Témoignage", "Getuigenis")}
                   <textarea required rows={4} value={reviewDraft.quote} onChange={(event) => setReviewDraft((current) => ({ ...current, quote: event.target.value }))} />
                 </label>
               </div>
               <button className={styles.primaryButton} type="submit" disabled={saving}>
-                {saving ? "Enregistrement…" : "Enregistrer"}
+                {saving ? t("Enregistrement…", "Opslaan…") : t("Enregistrer", "Opslaan")}
               </button>
             </form>
           )}
@@ -1177,128 +1081,129 @@ export default function AdminPage() {
           {activeSection === "doctors" && showDoctorForm && (
             <form className={styles.reviewForm} onSubmit={saveDoctor}>
               <div className={styles.formHeading}>
-                <h2>{editingDoctorId === null ? "Nouveau membre" : "Modifier le membre"}</h2>
-                <button type="button" className={styles.textButton} onClick={() => setShowDoctorForm(false)}>Fermer</button>
+                <h2>{editingDoctorId === null ? t("Nouveau membre", "Nieuw teamlid") : t("Modifier le membre", "Teamlid bewerken")}</h2>
+                <button type="button" className={styles.textButton} onClick={() => setShowDoctorForm(false)}>{t("Fermer", "Sluiten")}</button>
               </div>
               <div className={`${styles.formGrid} ${styles.doctorFormGrid}`}>
                 <label>
-                  Initiales
+                  {t("Initiales", "Initialen")}
                   <input required maxLength={4} value={doctorDraft.initials} onChange={(event) => setDoctorDraft((current) => ({ ...current, initials: event.target.value.toUpperCase() }))} />
                 </label>
                 <label>
-                  Ordre
+                  {t("Ordre", "Volgorde")}
                   <input required type="number" min="0" max="999" value={doctorDraft.order} onChange={(event) => setDoctorDraft((current) => ({ ...current, order: event.target.value }))} />
                 </label>
                 <label className={styles.checkboxLabel}>
                   <input type="checkbox" checked={doctorDraft.published} onChange={(event) => setDoctorDraft((current) => ({ ...current, published: event.target.checked }))} />
-                  Visible sur le site
+                  {t("Visible sur le site", "Zichtbaar op de website")}
                 </label>
                 <span />
                 <label>
-                  Nom en français
+                  {t("Nom en français", "Naam in het Frans")}
                   <input required value={doctorDraft.nameFr} onChange={(event) => setDoctorDraft((current) => ({ ...current, nameFr: event.target.value }))} />
                 </label>
                 <label>
-                  Naam in het Nederlands
+                  {t("Nom en néerlandais", "Naam in het Nederlands")}
                   <input required value={doctorDraft.nameNl} onChange={(event) => setDoctorDraft((current) => ({ ...current, nameNl: event.target.value }))} />
                 </label>
                 <label>
-                  Fonction en français
+                  {t("Fonction en français", "Functie in het Frans")}
                   <input required value={doctorDraft.roleFr} onChange={(event) => setDoctorDraft((current) => ({ ...current, roleFr: event.target.value }))} />
                 </label>
                 <label>
-                  Functie in het Nederlands
+                  {t("Fonction en néerlandais", "Functie in het Nederlands")}
                   <input required value={doctorDraft.roleNl} onChange={(event) => setDoctorDraft((current) => ({ ...current, roleNl: event.target.value }))} />
                 </label>
                 <label className={styles.doctorBioField}>
-                  Présentation en français
+                  {t("Présentation en français", "Beschrijving in het Frans")}
                   <textarea required rows={3} value={doctorDraft.bioFr} onChange={(event) => setDoctorDraft((current) => ({ ...current, bioFr: event.target.value }))} />
                 </label>
                 <label className={styles.doctorBioField}>
-                  Beschrijving in het Nederlands
+                  {t("Présentation en néerlandais", "Beschrijving in het Nederlands")}
                   <textarea required rows={3} value={doctorDraft.bioNl} onChange={(event) => setDoctorDraft((current) => ({ ...current, bioNl: event.target.value }))} />
                 </label>
               </div>
               <button className={styles.primaryButton} type="submit" disabled={saving}>
-                {saving ? "Enregistrement…" : "Enregistrer le membre"}
+                {saving ? t("Enregistrement…", "Opslaan…") : t("Enregistrer le membre", "Teamlid opslaan")}
               </button>
             </form>
           )}
 
           {activeSection === "overview" ? (
             loading ? (
-              <div className={styles.emptyState}>Chargement des données…</div>
+              <div className={styles.emptyState}>{t("Chargement des données…", "Gegevens laden…")}</div>
             ) : (
               <>
                 <div className={styles.prioritySections}>
                   <section className={styles.prioritySection} aria-labelledby="reservations-overview-title">
                     <div className={styles.priorityHeader}>
                       <div>
-                        <p className={styles.eyebrow}>Réservations</p>
-                        <h2 id="reservations-overview-title">Vue complète des réservations</h2>
-                        <p>Les demandes en attente sont affichées en premier, avec leur statut et les actions essentielles.</p>
+                        <p className={styles.eyebrow}>{t("Réservations", "Reservaties")}</p>
+                        <h2 id="reservations-overview-title">{t("Vue complète des réservations", "Volledig overzicht van de reservaties")}</h2>
+                        <p>{t("Les demandes en attente sont affichées en premier, avec leur statut et les actions essentielles.", "Aanvragen in afwachting staan bovenaan, met hun status en de belangrijkste acties.")}</p>
                       </div>
                       <div className={styles.priorityHeaderAside}>
-                        <span>{pendingAppointments} en attente</span>
+                        <span>{pendingAppointments} {t("en attente", "in afwachting")}</span>
                         <Link className={styles.panelLink} href="/admin/reservations">
-                          Voir toutes les réservations <span aria-hidden="true">→</span>
+                          {t("Voir toutes les réservations", "Alle reservaties bekijken")} <span aria-hidden="true">→</span>
                         </Link>
                       </div>
                     </div>
                     <div className={reservationStyles.card}>
-                      <div className={reservationStyles.tableWrap} role="region" aria-label="Aperçu complet des réservations" tabIndex={0}>
-                        <table className={`${reservationStyles.table} ${styles.dashboardReservationTable}`}>
-                          <caption className={styles.tableCaption}>Réservations récentes et en attente de traitement</caption>
+                      <div className={reservationStyles.tableWrap} role="region" aria-label={t("Aperçu complet des réservations", "Volledig overzicht van de reservaties")} tabIndex={0}>
+                        <table className={`${reservationStyles.table} ${reservationStyles.stackTable} ${styles.dashboardReservationTable}`}>
+                          <caption className={styles.tableCaption}>{t("Réservations récentes et en attente de traitement", "Recente reservaties en reservaties die op verwerking wachten")}</caption>
                           <thead>
                             <tr>
-                              <th>Patient</th>
-                              <th>Contact</th>
-                              <th>Soin</th>
-                              <th>Date</th>
-                              <th>Heure</th>
-                              <th>Durée</th>
-                              <th>Statut</th>
-                              <th>Actions</th>
+                              <th>{t("Patient", "Patiënt")}</th>
+                              <th>{t("Contact", "Contact")}</th>
+                              <th>{t("Soin", "Behandeling")}</th>
+                              <th>{t("Date", "Datum")}</th>
+                              <th>{t("Heure", "Uur")}</th>
+                              <th>{t("Durée", "Duur")}</th>
+                              <th>{t("Statut", "Status")}</th>
+                              <th>{t("Actions", "Acties")}</th>
                             </tr>
                           </thead>
                           <tbody>
                             {appointmentPreviews.reservations.length === 0 ? (
                               <tr>
-                                <td className={reservationStyles.empty} colSpan={8}>Aucune réservation pour le moment.</td>
+                                <td className={reservationStyles.empty} colSpan={8}>{t("Aucune réservation pour le moment.", "Nog geen reservaties.")}</td>
                               </tr>
                             ) : appointmentPreviews.reservations.map((item) => {
                               const status = appointmentStatus(item.status);
                               const meta = appointmentStatusMeta[status];
-                              const time = status === "confirmed" ? appointmentClock(item) : asText(item.time, "À préciser");
+                              const toSpecify = t("À préciser", "Nog te bepalen");
+                              const time = status === "confirmed" ? appointmentClock(item, toSpecify) : asText(item.time, toSpecify);
                               return (
                                 <tr key={item.id}>
-                                  <td><span className={reservationStyles.name}>{asText(item.firstName, "Patient")} {asText(item.lastName, "")}</span></td>
-                                  <td>
-                                    {asText(item.email, "E-mail à préciser")}
+                                  <td data-label={t("Patient", "Patiënt")}><span className={reservationStyles.name}>{asText(item.firstName, t("Patient", "Patiënt"))} {asText(item.lastName, "")}</span></td>
+                                  <td data-label={t("Contact", "Contact")}>
+                                    {asText(item.email, t("E-mail à préciser", "E-mail nog te bepalen"))}
                                     <br />
-                                    <span className={reservationStyles.muted}>{asText(item.phone, "Téléphone à préciser")}</span>
+                                    <span className={reservationStyles.muted}>{asText(item.phone, t("Téléphone à préciser", "Telefoon nog te bepalen"))}</span>
                                   </td>
-                                  <td>{asText(item.care, "Soin à préciser")}</td>
-                                  <td><strong className={styles.tableDate}>{formatAppointmentDay(item.day)}</strong></td>
-                                  <td>{time}</td>
-                                  <td>{status === "confirmed" ? `${asText(item.durationMin, "30")} min` : "À confirmer"}</td>
-                                  <td>
+                                  <td data-label={t("Soin", "Behandeling")}>{asText(item.care, t("Soin à préciser", "Behandeling nog te bepalen"))}</td>
+                                  <td data-label={t("Date", "Datum")}><strong className={styles.tableDate}>{formatAppointmentDay(item.day, locale, t("Date à préciser", "Datum nog te bepalen"))}</strong></td>
+                                  <td data-label={t("Heure", "Uur")}>{time}</td>
+                                  <td data-label={t("Durée", "Duur")}>{status === "confirmed" ? `${asText(item.durationMin, "30")} min` : t("À confirmer", "Te bevestigen")}</td>
+                                  <td data-label={t("Statut", "Status")}>
                                     <span className={reservationStyles.badge} style={{ background: meta.background, color: meta.color }}>
-                                      {meta.label}
+                                      {t(meta.label, meta.labelNl)}
                                     </span>
                                   </td>
-                                  <td>
+                                  <td data-label={t("Actions", "Acties")}>
                                     <div className={reservationStyles.actions}>
                                       {status === "pending" && (
                                         <>
-                                          <button className={`${reservationStyles.btn} ${reservationStyles.btnConfirm}`} type="button" onClick={() => openAppointmentAction(item, "confirm")} disabled={saving}>Confirmer</button>
-                                          <button className={`${reservationStyles.btn} ${reservationStyles.btnPropose}`} type="button" onClick={() => openAppointmentAction(item, "propose")} disabled={saving}>Proposer</button>
+                                          <button className={`${reservationStyles.btn} ${reservationStyles.btnConfirm}`} type="button" onClick={() => openAppointmentAction(item, "confirm")} disabled={saving}>{t("Confirmer", "Bevestigen")}</button>
+                                          <button className={`${reservationStyles.btn} ${reservationStyles.btnPropose}`} type="button" onClick={() => openAppointmentAction(item, "propose")} disabled={saving}>{t("Proposer", "Voorstellen")}</button>
                                         </>
                                       )}
                                       {(status === "pending" || status === "confirmed") && (
-                                        <button className={`${reservationStyles.btn} ${reservationStyles.btnCancel}`} type="button" onClick={() => void cancelAppointment(item)} disabled={saving}>Annuler</button>
+                                        <button className={`${reservationStyles.btn} ${reservationStyles.btnCancel}`} type="button" onClick={() => void cancelAppointment(item)} disabled={saving}>{t("Annuler", "Annuleren")}</button>
                                       )}
-                                      {(status === "completed" || status === "cancelled") && <span className={reservationStyles.muted}>Aucune action</span>}
+                                      {(status === "completed" || status === "cancelled") && <span className={reservationStyles.muted}>{t("Aucune action", "Geen actie")}</span>}
                                     </div>
                                   </td>
                                 </tr>
@@ -1313,64 +1218,64 @@ export default function AdminPage() {
                   <section className={styles.prioritySection} aria-labelledby="agenda-overview-title">
                     <div className={styles.priorityHeader}>
                       <div>
-                        <p className={styles.eyebrow}>Agenda</p>
-                        <h2 id="agenda-overview-title">Prochaines réservations</h2>
-                        <p>Les réservations confirmées à venir, classées par date et heure.</p>
+                        <p className={styles.eyebrow}>{t("Agenda", "Agenda")}</p>
+                        <h2 id="agenda-overview-title">{t("Prochaines réservations", "Volgende reservaties")}</h2>
+                        <p>{t("Les réservations confirmées à venir, classées par date et heure.", "De komende bevestigde reservaties, gesorteerd op datum en uur.")}</p>
                       </div>
                       <div className={styles.priorityHeaderAside}>
-                        <span>{appointmentPreviews.upcoming.length} à venir</span>
+                        <span>{appointmentPreviews.upcoming.length} {t("à venir", "gepland")}</span>
                         <Link className={styles.panelLink} href="/admin/agenda">
-                          Ouvrir l’agenda <span aria-hidden="true">→</span>
+                          {t("Ouvrir l’agenda", "Agenda openen")} <span aria-hidden="true">→</span>
                         </Link>
                       </div>
                     </div>
                     <div className={reservationStyles.card}>
-                      <div className={reservationStyles.tableWrap} role="region" aria-label="Agenda des réservations à venir" tabIndex={0}>
-                        <table className={`${reservationStyles.table} ${styles.dashboardAgendaTable}`}>
-                          <caption className={styles.tableCaption}>Réservations confirmées à venir</caption>
+                      <div className={reservationStyles.tableWrap} role="region" aria-label={t("Agenda des réservations à venir", "Agenda van de komende reservaties")} tabIndex={0}>
+                        <table className={`${reservationStyles.table} ${reservationStyles.stackTable} ${styles.dashboardAgendaTable}`}>
+                          <caption className={styles.tableCaption}>{t("Réservations confirmées à venir", "Komende bevestigde reservaties")}</caption>
                           <thead>
                             <tr>
-                              <th>Date</th>
-                              <th>Heure</th>
-                              <th>Durée</th>
-                              <th>Patient</th>
-                              <th>Soin</th>
-                              <th>Statut</th>
-                              <th>Actions</th>
+                              <th>{t("Date", "Datum")}</th>
+                              <th>{t("Heure", "Uur")}</th>
+                              <th>{t("Durée", "Duur")}</th>
+                              <th>{t("Patient", "Patiënt")}</th>
+                              <th>{t("Soin", "Behandeling")}</th>
+                              <th>{t("Statut", "Status")}</th>
+                              <th>{t("Actions", "Acties")}</th>
                             </tr>
                           </thead>
                           <tbody>
                             {appointmentPreviews.upcoming.length === 0 ? (
                               <tr>
-                                <td className={reservationStyles.empty} colSpan={7}>Aucune réservation confirmée à venir.</td>
+                                <td className={reservationStyles.empty} colSpan={7}>{t("Aucune réservation confirmée à venir.", "Geen komende bevestigde reservaties.")}</td>
                               </tr>
                             ) : appointmentPreviews.upcoming.map((item) => {
                               const status = appointmentStatus(item.status);
                               const meta = appointmentStatusMeta[status];
                               const day = dateOnly(item.day);
-                              const time = appointmentClock(item);
+                              const time = appointmentClock(item, t("À préciser", "Nog te bepalen"));
                               const dateTime = day && /^\d{2}:\d{2}$/.test(time) ? `${day}T${time}` : day || undefined;
                               return (
                                 <tr key={item.id}>
-                                  <td>
-                                    <time className={styles.tableDate} dateTime={dateTime}>{formatAppointmentDay(item.day)}</time>
+                                  <td data-label={t("Date", "Datum")}>
+                                    <time className={styles.tableDate} dateTime={dateTime}>{formatAppointmentDay(item.day, locale, t("Date à préciser", "Datum nog te bepalen"))}</time>
                                   </td>
-                                  <td>{time}</td>
-                                  <td>{asText(item.durationMin, "30")} min</td>
-                                  <td>
-                                    <span className={reservationStyles.name}>{asText(item.firstName, "Patient")} {asText(item.lastName, "")}</span>
+                                  <td data-label={t("Heure", "Uur")}>{time}</td>
+                                  <td data-label={t("Durée", "Duur")}>{asText(item.durationMin, "30")} min</td>
+                                  <td data-label={t("Patient", "Patiënt")}>
+                                    <span className={reservationStyles.name}>{asText(item.firstName, t("Patient", "Patiënt"))} {asText(item.lastName, "")}</span>
                                     <br />
-                                    <span className={reservationStyles.muted}>{asText(item.email, "Coordonnées à préciser")}</span>
+                                    <span className={reservationStyles.muted}>{asText(item.email, t("Coordonnées à préciser", "Contactgegevens nog te bepalen"))}</span>
                                   </td>
-                                  <td>{asText(item.care, "Soin à préciser")}</td>
-                                  <td>
+                                  <td data-label={t("Soin", "Behandeling")}>{asText(item.care, t("Soin à préciser", "Behandeling nog te bepalen"))}</td>
+                                  <td data-label={t("Statut", "Status")}>
                                     <span className={reservationStyles.badge} style={{ background: meta.background, color: meta.color }}>
-                                      {meta.label}
+                                      {t(meta.label, meta.labelNl)}
                                     </span>
                                   </td>
-                                  <td>
+                                  <td data-label={t("Actions", "Acties")}>
                                     <div className={reservationStyles.actions}>
-                                      <button className={`${reservationStyles.btn} ${reservationStyles.btnCancel}`} type="button" onClick={() => void cancelAppointment(item)} disabled={saving}>Annuler</button>
+                                      <button className={`${reservationStyles.btn} ${reservationStyles.btnCancel}`} type="button" onClick={() => void cancelAppointment(item)} disabled={saving}>{t("Annuler", "Annuleren")}</button>
                                     </div>
                                   </td>
                                 </tr>
@@ -1385,24 +1290,24 @@ export default function AdminPage() {
 
                 <div className={styles.statsGrid}>
                   <button type="button" className={styles.statCard} onClick={() => setActiveSection("contacts")}>
-                    <span>Messages</span>
+                    <span>{t("Messages", "Berichten")}</span>
                     <strong>{overviewTotals.contacts}</strong>
-                    <small>{newMessages} nouveau{newMessages === 1 ? "" : "x"}</small>
+                    <small className={newMessages > 0 ? styles.statAlert : undefined}>{t(`${newMessages} nouveau${newMessages === 1 ? "" : "x"}`, `${newMessages} nieuw${newMessages === 1 ? "" : "e"}`)}</small>
                   </button>
                   <Link className={styles.statCard} href="/admin/reservations">
-                    <span>Réservations</span>
+                    <span>{t("Réservations", "Reservaties")}</span>
                     <strong>{overviewTotals.appointments}</strong>
-                    <small>{pendingAppointments} à traiter</small>
+                    <small className={pendingAppointments > 0 ? styles.statAlert : undefined}>{t(`${pendingAppointments} à traiter`, `${pendingAppointments} te verwerken`)}</small>
                   </Link>
                   <button type="button" className={styles.statCard} onClick={() => setActiveSection("reviews")}>
-                    <span>Avis</span>
+                    <span>{t("Avis", "Beoordelingen")}</span>
                     <strong>{overviewTotals.reviews}</strong>
-                    <small>{publishedReviews} publié{publishedReviews === 1 ? "" : "s"}</small>
+                    <small>{t(`${publishedReviews} publié${publishedReviews === 1 ? "" : "s"}`, `${publishedReviews} gepubliceerd`)}</small>
                   </button>
                   <button type="button" className={styles.statCard} onClick={() => setActiveSection("doctors")}>
-                    <span>Équipe</span>
+                    <span>{t("Équipe", "Team")}</span>
                     <strong>{overviewTotals.doctors}</strong>
-                    <small>membres du cabinet</small>
+                    <small>{t("membres du cabinet", "leden van de praktijk")}</small>
                   </button>
                 </div>
 
@@ -1410,13 +1315,13 @@ export default function AdminPage() {
                   <section className={styles.overviewPanel}>
                     <div className={styles.panelHeading}>
                       <div>
-                        <p className={styles.eyebrow}>Aujourd’hui</p>
-                        <h2>Activité récente</h2>
+                        <p className={styles.eyebrow}>{t("Aujourd’hui", "Vandaag")}</p>
+                        <h2>{t("Activité récente", "Recente activiteit")}</h2>
                       </div>
-                      <span>{recentActivity.length} entrées</span>
+                      <span>{t(`${recentActivity.length} entrées`, `${recentActivity.length} items`)}</span>
                     </div>
                     {recentActivity.length === 0 ? (
-                      <p className={styles.panelEmpty}>Aucune activité pour le moment.</p>
+                      <p className={styles.panelEmpty}>{t("Aucune activité pour le moment.", "Nog geen activiteit.")}</p>
                     ) : (
                       <div className={styles.activityList}>
                         {recentActivity.map((activity) => {
@@ -1427,7 +1332,7 @@ export default function AdminPage() {
                                 <strong>{activity.title}</strong>
                                 <small>{activity.type} · {activity.detail}</small>
                               </span>
-                              <time>{formatDate(activity.date)}</time>
+                              <time>{formatDate(activity.date, locale)}</time>
                             </>
                           );
                           return activity.href ? (
@@ -1449,34 +1354,34 @@ export default function AdminPage() {
                   <aside className={styles.quickPanel}>
                     <div className={styles.panelHeading}>
                       <div>
-                        <p className={styles.eyebrow}>Raccourcis</p>
-                        <h2>Actions rapides</h2>
+                        <p className={styles.eyebrow}>{t("Raccourcis", "Snelkoppelingen")}</p>
+                        <h2>{t("Actions rapides", "Snelle acties")}</h2>
                       </div>
                     </div>
                     <div className={styles.quickActions}>
                       <Link href="/admin/reservations">
-                        <strong>Gérer les réservations</strong>
-                        <span>Confirmer ou annuler une demande</span>
+                        <strong>{t("Gérer les réservations", "Reservaties beheren")}</strong>
+                        <span>{t("Confirmer ou annuler une demande", "Een aanvraag bevestigen of annuleren")}</span>
                       </Link>
                       <button type="button" onClick={() => setActiveSection("contacts")}>
-                        <strong>Lire les messages</strong>
-                        <span>Répondre aux demandes des patients</span>
+                        <strong>{t("Lire les messages", "Berichten lezen")}</strong>
+                        <span>{t("Répondre aux demandes des patients", "Vragen van patiënten beantwoorden")}</span>
                       </button>
                       <button type="button" onClick={() => { setActiveSection("reviews"); setShowReviewForm(true); }}>
-                        <strong>Ajouter un avis</strong>
-                        <span>Publier un témoignage sur le site</span>
+                        <strong>{t("Ajouter un avis", "Beoordeling toevoegen")}</strong>
+                        <span>{t("Publier un témoignage sur le site", "Een getuigenis op de website publiceren")}</span>
                       </button>
                       <button type="button" onClick={() => setActiveSection("doctors")}>
-                        <strong>Gérer l’équipe</strong>
-                        <span>Ajouter ou modifier les médecins</span>
+                        <strong>{t("Gérer l’équipe", "Team beheren")}</strong>
+                        <span>{t("Ajouter ou modifier les médecins", "Tandartsen toevoegen of bewerken")}</span>
                       </button>
                       <button type="button" onClick={() => setActiveSection("forms")}>
-                        <strong>Modifier les formulaires</strong>
-                        <span>Gérer les textes et les champs publics</span>
+                        <strong>{t("Modifier les formulaires", "Formulieren bewerken")}</strong>
+                        <span>{t("Gérer les textes et les champs publics", "Teksten en publieke velden beheren")}</span>
                       </button>
                       <button type="button" onClick={() => setActiveSection("site")}>
-                        <strong>Voir les pages</strong>
-                        <span>Ouvrir une page du site</span>
+                        <strong>{t("Voir les pages", "Pagina’s bekijken")}</strong>
+                        <span>{t("Ouvrir une page du site", "Een pagina van de website openen")}</span>
                       </button>
                     </div>
                   </aside>
@@ -1485,9 +1390,9 @@ export default function AdminPage() {
             )
           ) : activeSection === "forms" ? (
             loading ? (
-              <div className={styles.emptyState}>Chargement des formulaires…</div>
+              <div className={styles.emptyState}>{t("Chargement des formulaires…", "Formulieren laden…")}</div>
             ) : !formConfigs ? (
-              <div className={styles.emptyState}>Aucune configuration disponible.</div>
+              <div className={styles.emptyState}>{t("Aucune configuration disponible.", "Geen configuratie beschikbaar.")}</div>
             ) : (
               <div className={styles.formManager}>
                 {(["contact", "appointment"] as FormType[]).map((formType) => {
@@ -1498,8 +1403,8 @@ export default function AdminPage() {
                       <div className={styles.formConfigHeader}>
                         <div>
                           <p className={styles.eyebrow}>{config.slug}</p>
-                          <h2>{meta.name}</h2>
-                          <a href={meta.href} target="_blank" rel="noreferrer">Voir la page ↗</a>
+                          <h2>{t(meta.name, meta.nameNl)}</h2>
+                          <a href={meta.href} target="_blank" rel="noreferrer">{t("Voir la page", "Pagina bekijken")} ↗</a>
                         </div>
                         <label className={styles.formSwitch}>
                           <input
@@ -1507,43 +1412,43 @@ export default function AdminPage() {
                             checked={config.enabled}
                             onChange={(event) => updateFormConfig(formType, { enabled: event.target.checked })}
                           />
-                          Formulaire actif
+                          {t("Formulaire actif", "Formulier actief")}
                         </label>
                       </div>
 
                       <div className={styles.formSettingsGrid}>
                         <label>
-                          Titre en français
+                          {t("Titre en français", "Titel in het Frans")}
                           <input required value={config.titleFr} onChange={(event) => updateFormConfig(formType, { titleFr: event.target.value })} />
                         </label>
                         <label>
-                          Titel in het Nederlands
+                          {t("Titre en néerlandais", "Titel in het Nederlands")}
                           <input required value={config.titleNl} onChange={(event) => updateFormConfig(formType, { titleNl: event.target.value })} />
                         </label>
                         <label>
-                          Introduction en français
+                          {t("Introduction en français", "Introductie in het Frans")}
                           <textarea rows={3} value={config.descriptionFr} onChange={(event) => updateFormConfig(formType, { descriptionFr: event.target.value })} />
                         </label>
                         <label>
-                          Introductie in het Nederlands
+                          {t("Introduction en néerlandais", "Introductie in het Nederlands")}
                           <textarea rows={3} value={config.descriptionNl} onChange={(event) => updateFormConfig(formType, { descriptionNl: event.target.value })} />
                         </label>
                         <label>
-                          Bouton en français
+                          {t("Bouton en français", "Knop in het Frans")}
                           <input required value={config.submitLabelFr} onChange={(event) => updateFormConfig(formType, { submitLabelFr: event.target.value })} />
                         </label>
                         <label>
-                          Knop in het Nederlands
+                          {t("Bouton en néerlandais", "Knop in het Nederlands")}
                           <input required value={config.submitLabelNl} onChange={(event) => updateFormConfig(formType, { submitLabelNl: event.target.value })} />
                         </label>
                       </div>
 
                       <div className={styles.fieldsHeading}>
                         <div>
-                          <h3>Champs du formulaire</h3>
-                          <p>Les clés techniques restent fixes pour conserver les envois existants.</p>
+                          <h3>{t("Champs du formulaire", "Formuliervelden")}</h3>
+                          <p>{t("Les clés techniques restent fixes pour conserver les envois existants.", "De technische sleutels blijven vast om bestaande inzendingen te behouden.")}</p>
                         </div>
-                        <span>{config.fields.length} champs</span>
+                        <span>{t(`${config.fields.length} champs`, `${config.fields.length} velden`)}</span>
                       </div>
 
                       <div className={styles.formFields}>
@@ -1552,7 +1457,7 @@ export default function AdminPage() {
                             <div className={styles.formFieldHeader}>
                               <div className={styles.fieldKey}>
                                 <code>{field.key}</code>
-                                {lockedFormFields[formType].has(field.key) && <span>Champ essentiel</span>}
+                                {lockedFormFields[formType].has(field.key) && <span>{t("Champ essentiel", "Essentieel veld")}</span>}
                               </div>
                               <div className={styles.fieldOptions}>
                                 <label>
@@ -1562,7 +1467,7 @@ export default function AdminPage() {
                                     disabled={lockedFormFields[formType].has(field.key)}
                                     onChange={(event) => updateFormField(formType, field.key, { visible: event.target.checked })}
                                   />
-                                  Visible
+                                  {t("Visible", "Zichtbaar")}
                                 </label>
                                 <label>
                                   <input
@@ -1571,29 +1476,29 @@ export default function AdminPage() {
                                     disabled={lockedFormFields[formType].has(field.key)}
                                     onChange={(event) => updateFormField(formType, field.key, { required: event.target.checked })}
                                   />
-                                  Obligatoire
+                                  {t("Obligatoire", "Verplicht")}
                                 </label>
                               </div>
                             </div>
                             <div className={styles.fieldEditGrid}>
                               <label>
-                                Libellé FR
+                                {t("Libellé FR", "Label FR")}
                                 <input required value={field.labelFr} onChange={(event) => updateFormField(formType, field.key, { labelFr: event.target.value })} />
                               </label>
                               <label>
-                                Libellé NL
+                                {t("Libellé NL", "Label NL")}
                                 <input required value={field.labelNl} onChange={(event) => updateFormField(formType, field.key, { labelNl: event.target.value })} />
                               </label>
                               <label>
-                                Placeholder FR
+                                {t("Placeholder FR", "Placeholder FR")}
                                 <input value={field.placeholderFr} onChange={(event) => updateFormField(formType, field.key, { placeholderFr: event.target.value })} />
                               </label>
                               <label>
-                                Placeholder NL
+                                {t("Placeholder NL", "Placeholder NL")}
                                 <input value={field.placeholderNl} onChange={(event) => updateFormField(formType, field.key, { placeholderNl: event.target.value })} />
                               </label>
                               <label className={styles.orderField}>
-                                Ordre
+                                {t("Ordre", "Volgorde")}
                                 <input
                                   type="number"
                                   min="0"
@@ -1607,9 +1512,9 @@ export default function AdminPage() {
                       </div>
 
                       <div className={styles.formConfigActions}>
-                        <a className={styles.secondaryButton} href={meta.href} target="_blank" rel="noreferrer">Prévisualiser</a>
+                        <a className={styles.secondaryButton} href={meta.href} target="_blank" rel="noreferrer">{t("Prévisualiser", "Voorbeeld")}</a>
                         <button className={styles.primaryButton} type="submit" disabled={saving}>
-                          {saving ? "Enregistrement…" : "Enregistrer le formulaire"}
+                          {saving ? t("Enregistrement…", "Opslaan…") : t("Enregistrer le formulaire", "Formulier opslaan")}
                         </button>
                       </div>
                     </form>
@@ -1623,52 +1528,52 @@ export default function AdminPage() {
                 <form className={`${styles.formConfigCard} ${styles.siteSettingsCard}`} onSubmit={(event) => void saveClinicSettings(event)}>
                   <div className={styles.formConfigHeader}>
                     <div>
-                      <p className={styles.eyebrow}>Informations publiques</p>
-                      <h2>Coordonnées du cabinet</h2>
+                      <p className={styles.eyebrow}>{t("Informations publiques", "Publieke informatie")}</p>
+                      <h2>{t("Coordonnées du cabinet", "Contactgegevens van de praktijk")}</h2>
                     </div>
-                    <a href="/contact" target="_blank" rel="noreferrer">Prévisualiser</a>
+                    <a href="/contact" target="_blank" rel="noreferrer">{t("Prévisualiser", "Voorbeeld")}</a>
                   </div>
                   <div className={styles.formSettingsGrid}>
                     <label>
-                      Téléphone
+                      {t("Téléphone", "Telefoon")}
                       <input type="tel" required value={clinicSettings.phoneDisplay} onChange={(event) => setClinicSettings((current) => ({ ...(current ?? emptyClinicSettings), phoneDisplay: event.target.value }))} />
                     </label>
                     <label>
-                      E-mail
+                      {t("E-mail", "E-mail")}
                       <input type="email" required value={clinicSettings.email} onChange={(event) => setClinicSettings((current) => ({ ...(current ?? emptyClinicSettings), email: event.target.value }))} />
                     </label>
                     <label>
-                      Horaires courts — FR
+                      {t("Horaires courts — FR", "Korte openingsuren — FR")}
                       <input required value={clinicSettings.scheduleFr} onChange={(event) => setClinicSettings((current) => ({ ...(current ?? emptyClinicSettings), scheduleFr: event.target.value }))} />
                     </label>
                     <label>
-                      Korte openingsuren — NL
+                      {t("Horaires courts — NL", "Korte openingsuren — NL")}
                       <input required value={clinicSettings.scheduleNl} onChange={(event) => setClinicSettings((current) => ({ ...(current ?? emptyClinicSettings), scheduleNl: event.target.value }))} />
                     </label>
                     <label>
-                      Urgences — FR
+                      {t("Urgences — FR", "Spoed — FR")}
                       <input required value={clinicSettings.emergencyFr} onChange={(event) => setClinicSettings((current) => ({ ...(current ?? emptyClinicSettings), emergencyFr: event.target.value }))} />
                     </label>
                     <label>
-                      Spoed — NL
+                      {t("Urgences — NL", "Spoed — NL")}
                       <input required value={clinicSettings.emergencyNl} onChange={(event) => setClinicSettings((current) => ({ ...(current ?? emptyClinicSettings), emergencyNl: event.target.value }))} />
                     </label>
                   </div>
                   <div className={styles.formConfigActions}>
-                    <span className={styles.settingsHint}>Ces informations apparaissent dans l’en-tête, le contact et le pied de page.</span>
+                    <span className={styles.settingsHint}>{t("Ces informations apparaissent dans l’en-tête, le contact et le pied de page.", "Deze informatie verschijnt in de koptekst, op de contactpagina en in de voettekst.")}</span>
                     <button className={styles.primaryButton} type="submit" disabled={saving}>
-                      {saving ? "Enregistrement…" : "Enregistrer les informations"}
+                      {saving ? t("Enregistrement…", "Opslaan…") : t("Enregistrer les informations", "Informatie opslaan")}
                     </button>
                   </div>
                 </form>
               ) : (
-                <div className={styles.emptyState}>Chargement des informations…</div>
+                <div className={styles.emptyState}>{t("Chargement des informations…", "Informatie laden…")}</div>
               )}
               <div className={styles.siteGrid}>
-                {sitePages.map(([label, href]) => (
+                {sitePages.map(([label, labelNl, href]) => (
                   <a key={href} className={styles.siteCard} href={href} target="_blank" rel="noreferrer">
                     <span>
-                      <strong>{label}</strong>
+                      <strong>{t(label, labelNl)}</strong>
                       <small>{href}</small>
                     </span>
                     <b aria-hidden="true">↗</b>
@@ -1681,19 +1586,19 @@ export default function AdminPage() {
               <form className={styles.formConfigCard} onSubmit={(event) => void addBlockedIp(event)}>
                 <div className={styles.formConfigHeader}>
                   <div>
-                    <p className={styles.eyebrow}>Sécurité des réservations</p>
-                    <h2>Bloquer une adresse IP</h2>
+                    <p className={styles.eyebrow}>{t("Sécurité des réservations", "Beveiliging van de reservaties")}</p>
+                    <h2>{t("Bloquer une adresse IP", "Een IP-adres blokkeren")}</h2>
                   </div>
                 </div>
                 <div className={styles.formSettingsGrid}>
                   <label className={styles.fullField}>
-                    Adresse IPv4 ou IPv6
+                    {t("Adresse IPv4 ou IPv6", "IPv4- of IPv6-adres")}
                     <input
                       required
                       maxLength={45}
                       value={blockedIpDraft}
                       onChange={(event) => setBlockedIpDraft(event.target.value)}
-                      placeholder="192.0.2.10 ou 2001:db8::10"
+                      placeholder={t("192.0.2.10 ou 2001:db8::10", "192.0.2.10 of 2001:db8::10")}
                       autoComplete="off"
                       autoCapitalize="none"
                       spellCheck={false}
@@ -1701,17 +1606,17 @@ export default function AdminPage() {
                   </label>
                 </div>
                 <div className={styles.formConfigActions}>
-                  <span className={styles.settingsHint}>Les nouvelles demandes de rendez-vous provenant de cette adresse seront refusées.</span>
+                  <span className={styles.settingsHint}>{t("Les nouvelles demandes de rendez-vous provenant de cette adresse seront refusées.", "Nieuwe afspraakaanvragen van dit adres worden geweigerd.")}</span>
                   <button className={styles.primaryButton} type="submit" disabled={saving || !blockedIpDraft.trim()}>
-                    {saving ? "Blocage…" : "Bloquer l’adresse IP"}
+                    {saving ? t("Blocage…", "Blokkeren…") : t("Bloquer l’adresse IP", "IP-adres blokkeren")}
                   </button>
                 </div>
               </form>
 
               {loading ? (
-                <div className={styles.emptyState}>Chargement des adresses IP…</div>
+                <div className={styles.emptyState}>{t("Chargement des adresses IP…", "IP-adressen laden…")}</div>
               ) : items.length === 0 ? (
-                <div className={styles.emptyState}>Aucune adresse IP bloquée.</div>
+                <div className={styles.emptyState}>{t("Aucune adresse IP bloquée.", "Geen geblokkeerde IP-adressen.")}</div>
               ) : (
                 <div className={styles.records}>
                   {items.map((item) => {
@@ -1722,14 +1627,14 @@ export default function AdminPage() {
                           <div className={styles.recordHeading}>
                             <div>
                               <h2>{ipAddress}</h2>
-                              <p>Adresse IP bloquée</p>
+                              <p>{t("Adresse IP bloquée", "Geblokkeerd IP-adres")}</p>
                             </div>
-                            <time>{formatDate(item.createdAt)}</time>
+                            <time>{formatDate(item.createdAt, locale)}</time>
                           </div>
                         </div>
                         <div className={styles.recordActions}>
                           <button className={styles.dangerButton} type="button" onClick={() => void unblockIp(item.id, ipAddress)} disabled={saving}>
-                            Débloquer
+                            {t("Débloquer", "Deblokkeren")}
                           </button>
                         </div>
                       </article>
@@ -1739,9 +1644,9 @@ export default function AdminPage() {
               )}
             </div>
           ) : loading ? (
-            <div className={styles.emptyState}>Chargement des données…</div>
+            <div className={styles.emptyState}>{t("Chargement des données…", "Gegevens laden…")}</div>
           ) : items.length === 0 ? (
-            <div className={styles.emptyState}>Aucun élément pour le moment.</div>
+            <div className={styles.emptyState}>{t("Aucun élément pour le moment.", "Nog geen elementen.")}</div>
           ) : activeSection === "contacts" ? (
             <div className={styles.records}>
               {items.map((item) => (
@@ -1750,9 +1655,9 @@ export default function AdminPage() {
                     <div className={styles.recordHeading}>
                       <div>
                         <h2>{asText(item.name)}</h2>
-                        <p>{asText(item.subject, "Sans objet")}</p>
+                        <p>{asText(item.subject, t("Sans objet", "Geen onderwerp"))}</p>
                       </div>
-                      <time>{formatDate(item.createdAt)}</time>
+                      <time>{formatDate(item.createdAt, locale)}</time>
                     </div>
                     <div className={styles.contactLinks}>
                       <a href={`mailto:${asText(item.email, "")}`}>{asText(item.email)}</a>
@@ -1762,15 +1667,18 @@ export default function AdminPage() {
                     <p className={styles.message}>{asText(item.message)}</p>
                   </div>
                   <div className={styles.recordActions}>
+                    <span className={`${styles.statusPill} ${styles["status_" + asText(item.status, "new")] ?? ""}`}>
+                      {asText(item.status, "new") === "new" ? t("Nouveau", "Nieuw") : asText(item.status, "new") === "read" ? t("Lu", "Gelezen") : t("Archivé", "Gearchiveerd")}
+                    </span>
                     <label>
-                      Statut
+                      {t("Statut", "Status")}
                       <select value={asText(item.status, "new")} onChange={(event) => void updateItem(item.id, { status: event.target.value })} disabled={saving}>
-                        <option value="new">Nouveau</option>
-                        <option value="read">Lu</option>
-                        <option value="archived">Archivé</option>
+                        <option value="new">{t("Nouveau", "Nieuw")}</option>
+                        <option value="read">{t("Lu", "Gelezen")}</option>
+                        <option value="archived">{t("Archivé", "Gearchiveerd")}</option>
                       </select>
                     </label>
-                    <button className={styles.dangerButton} type="button" onClick={() => void deleteItem(item.id)} disabled={saving}>Supprimer</button>
+                    <button className={styles.dangerButton} type="button" onClick={() => void deleteItem(item.id)} disabled={saving}>{t("Supprimer", "Verwijderen")}</button>
                   </div>
                 </article>
               ))}
@@ -1783,29 +1691,29 @@ export default function AdminPage() {
                     <div className={styles.recordHeading}>
                       <div>
                         <h2>{asText(item.firstName)} {asText(item.lastName, "")}</h2>
-                        <p>{asText(item.care, "Soin à préciser")}</p>
+                        <p>{asText(item.care, t("Soin à préciser", "Behandeling nog te bepalen"))}</p>
                       </div>
-                      <time>{formatDate(item.createdAt)}</time>
+                      <time>{formatDate(item.createdAt, locale)}</time>
                     </div>
                     <div className={styles.detailGrid}>
-                      <p><span>Date souhaitée</span><strong>{asText(item.day)}</strong></p>
-                      <p><span>Moment</span><strong>{asText(item.time)}</strong></p>
-                      <p><span>E-mail</span><a href={`mailto:${asText(item.email, "")}`}>{asText(item.email)}</a></p>
-                      <p><span>Téléphone</span><a href={`tel:${asText(item.phone, "")}`}>{asText(item.phone)}</a></p>
+                      <p><span>{t("Date souhaitée", "Gewenste datum")}</span><strong>{asText(item.day)}</strong></p>
+                      <p><span>{t("Moment", "Moment")}</span><strong>{asText(item.time)}</strong></p>
+                      <p><span>{t("E-mail", "E-mail")}</span><a href={`mailto:${asText(item.email, "")}`}>{asText(item.email)}</a></p>
+                      <p><span>{t("Téléphone", "Telefoon")}</span><a href={`tel:${asText(item.phone, "")}`}>{asText(item.phone)}</a></p>
                     </div>
                     {Boolean(item.note) && <p className={styles.message}>{asText(item.note)}</p>}
                   </div>
                   <div className={styles.recordActions}>
                     <label>
-                      Statut
+                      {t("Statut", "Status")}
                       <select value={asText(item.status, "pending")} onChange={(event) => void updateItem(item.id, { status: event.target.value })} disabled={saving}>
-                        <option value="pending">À traiter</option>
-                        <option value="confirmed">Confirmé</option>
-                        <option value="completed">Terminé</option>
-                        <option value="cancelled">Annulé</option>
+                        <option value="pending">{t("À traiter", "Te verwerken")}</option>
+                        <option value="confirmed">{t("Confirmé", "Bevestigd")}</option>
+                        <option value="completed">{t("Terminé", "Afgerond")}</option>
+                        <option value="cancelled">{t("Annulé", "Geannuleerd")}</option>
                       </select>
                     </label>
-                    <button className={styles.dangerButton} type="button" onClick={() => void deleteItem(item.id)} disabled={saving}>Supprimer</button>
+                    <button className={styles.dangerButton} type="button" onClick={() => void deleteItem(item.id)} disabled={saving}>{t("Supprimer", "Verwijderen")}</button>
                   </div>
                 </article>
               ))}
@@ -1816,19 +1724,19 @@ export default function AdminPage() {
                 <article className={styles.reviewCard} key={item.id}>
                   <div className={styles.reviewMeta}>
                     <span>{"★".repeat(Number(item.rating) || 0)}</span>
-                    <span className={item.published ? styles.published : styles.hidden}>{item.published ? "Publié" : "Masqué"}</span>
+                    <span className={item.published ? styles.published : styles.hidden}>{item.published ? t("Publié", "Gepubliceerd") : t("Masqué", "Verborgen")}</span>
                   </div>
                   <blockquote>« {asText(item.quote)} »</blockquote>
                   <div className={styles.reviewByline}>
                     <strong>{asText(item.name)}</strong>
-                    <span>{asText(item.language, "fr").toUpperCase()} · {formatDate(item.createdAt)}</span>
+                    <span>{asText(item.language, "fr").toUpperCase()} · {formatDate(item.createdAt, locale)}</span>
                   </div>
                   <div className={styles.cardActions}>
                     <button className={styles.secondaryButton} type="button" onClick={() => void updateItem(item.id, { published: !item.published })} disabled={saving}>
-                      {item.published ? "Masquer" : "Publier"}
+                      {item.published ? t("Masquer", "Verbergen") : t("Publier", "Publiceren")}
                     </button>
-                    <button className={styles.secondaryButton} type="button" onClick={() => editReview(item)}>Modifier</button>
-                    <button className={styles.dangerButton} type="button" onClick={() => void deleteItem(item.id)} disabled={saving}>Supprimer</button>
+                    <button className={styles.secondaryButton} type="button" onClick={() => editReview(item)}>{t("Modifier", "Bewerken")}</button>
+                    <button className={styles.dangerButton} type="button" onClick={() => void deleteItem(item.id)} disabled={saving}>{t("Supprimer", "Verwijderen")}</button>
                   </div>
                 </article>
               ))}
@@ -1839,7 +1747,7 @@ export default function AdminPage() {
                 <article className={styles.doctorCard} key={item.id}>
                   <div className={styles.doctorCardTop}>
                     <strong className={styles.doctorInitials}>{asText(item.initials, "DR")}</strong>
-                    <span className={item.published ? styles.published : styles.hidden}>{item.published ? "Visible" : "Masqué"}</span>
+                    <span className={item.published ? styles.published : styles.hidden}>{item.published ? t("Visible", "Zichtbaar") : t("Masqué", "Verborgen")}</span>
                   </div>
                   <div className={styles.doctorNames}>
                     <div><small>FR</small><h2>{asText(item.nameFr)}</h2><p>{asText(item.roleFr)}</p></div>
@@ -1848,10 +1756,10 @@ export default function AdminPage() {
                   <p className={styles.doctorBio}>{asText(item.bioFr)}</p>
                   <div className={styles.cardActions}>
                     <button className={styles.secondaryButton} type="button" onClick={() => void updateItem(item.id, { published: !item.published })} disabled={saving}>
-                      {item.published ? "Masquer" : "Afficher"}
+                      {item.published ? t("Masquer", "Verbergen") : t("Afficher", "Tonen")}
                     </button>
-                    <button className={styles.secondaryButton} type="button" onClick={() => editDoctor(item)}>Modifier</button>
-                    <button className={styles.dangerButton} type="button" onClick={() => void deleteItem(item.id)} disabled={saving}>Supprimer</button>
+                    <button className={styles.secondaryButton} type="button" onClick={() => editDoctor(item)}>{t("Modifier", "Bewerken")}</button>
+                    <button className={styles.dangerButton} type="button" onClick={() => void deleteItem(item.id)} disabled={saving}>{t("Supprimer", "Verwijderen")}</button>
                   </div>
                 </article>
               ))}
@@ -1859,17 +1767,17 @@ export default function AdminPage() {
           )}
 
           {isDataSection(activeSection) && !loading && pagination.totalPages > 1 && (
-            <nav className={styles.pagination} aria-label="Pagination des résultats">
+            <nav className={styles.pagination} aria-label={t("Pagination des résultats", "Paginering van de resultaten")}>
               <button
                 className={styles.secondaryButton}
                 type="button"
                 disabled={pagination.page <= 1}
                 onClick={() => void loadItems(activeSection, pagination.page - 1)}
               >
-                Précédent
+                {t("Précédent", "Vorige")}
               </button>
               <span>
-                Page {pagination.page} sur {pagination.totalPages} · {pagination.total} éléments
+                {t(`Page ${pagination.page} sur ${pagination.totalPages} · ${pagination.total} éléments`, `Pagina ${pagination.page} van ${pagination.totalPages} · ${pagination.total} elementen`)}
               </span>
               <button
                 className={styles.secondaryButton}
@@ -1877,12 +1785,11 @@ export default function AdminPage() {
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => void loadItems(activeSection, pagination.page + 1)}
               >
-                Suivant
+                {t("Suivant", "Volgende")}
               </button>
             </nav>
           )}
         </section>
-      </div>
 
       {appointmentAction && (
         <div className={reservationStyles.overlay} onClick={(event) => { if (event.target === event.currentTarget) setAppointmentAction(null); }}>
@@ -1894,40 +1801,40 @@ export default function AdminPage() {
             onSubmit={(event) => { event.preventDefault(); void submitAppointmentAction(); }}
           >
             <h2 className={reservationStyles.modalTitle} id="dashboard-appointment-action-title">
-              {appointmentAction.mode === "confirm" ? "Confirmer le rendez-vous" : "Proposer un autre créneau"}
+              {appointmentAction.mode === "confirm" ? t("Confirmer le rendez-vous", "Afspraak bevestigen") : t("Proposer un autre créneau", "Een ander tijdstip voorstellen")}
             </h2>
             <p className={reservationStyles.modalSub}>
-              {asText(appointmentAction.item.firstName, "Patient")} {asText(appointmentAction.item.lastName, "")} — {asText(appointmentAction.item.care, "Soin à préciser")}
+              {asText(appointmentAction.item.firstName, t("Patient", "Patiënt"))} {asText(appointmentAction.item.lastName, "")} — {asText(appointmentAction.item.care, t("Soin à préciser", "Behandeling nog te bepalen"))}
             </p>
             <div className={reservationStyles.grid2}>
               <label className={reservationStyles.field}>
-                Date
+                {t("Date", "Datum")}
                 <input className={reservationStyles.input} required type="date" value={appointmentDraft.day} onChange={(event) => setAppointmentDraft((current) => ({ ...current, day: event.target.value }))} />
               </label>
               <label className={reservationStyles.field}>
-                Heure
+                {t("Heure", "Uur")}
                 <input className={reservationStyles.input} required type="time" value={appointmentDraft.time} onChange={(event) => setAppointmentDraft((current) => ({ ...current, time: event.target.value }))} />
               </label>
             </div>
             {appointmentAction.mode === "confirm" && (
               <label className={reservationStyles.field}>
-                Durée (minutes)
+                {t("Durée (minutes)", "Duur (minuten)")}
                 <input className={reservationStyles.input} required min="5" step="5" type="number" value={appointmentDraft.duration} onChange={(event) => setAppointmentDraft((current) => ({ ...current, duration: event.target.value }))} />
               </label>
             )}
             <label className={reservationStyles.field}>
-              Message au patient (optionnel)
+              {t("Message au patient (optionnel)", "Bericht aan de patiënt (optioneel)")}
               <textarea className={reservationStyles.input} rows={3} value={appointmentDraft.message} onChange={(event) => setAppointmentDraft((current) => ({ ...current, message: event.target.value }))} />
             </label>
             <div className={reservationStyles.modalActions}>
-              <button className={reservationStyles.ghost} type="button" onClick={() => setAppointmentAction(null)}>Fermer</button>
+              <button className={reservationStyles.ghost} type="button" onClick={() => setAppointmentAction(null)}>{t("Fermer", "Sluiten")}</button>
               <button className={reservationStyles.primary} type="submit" disabled={saving || !appointmentDraft.day || !appointmentDraft.time}>
-                {saving ? "Envoi…" : appointmentAction.mode === "confirm" ? "Confirmer + e-mail" : "Proposer + e-mail"}
+                {saving ? t("Envoi…", "Verzenden…") : appointmentAction.mode === "confirm" ? t("Confirmer + e-mail", "Bevestigen + e-mail") : t("Proposer + e-mail", "Voorstellen + e-mail")}
               </button>
             </div>
           </form>
         </div>
       )}
-    </main>
+    </AdminShell>
   );
 }

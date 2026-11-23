@@ -106,3 +106,48 @@
   .layout { padding: 20px; }
   .content { padding: 17px; }
 }
+
+/* Redesign: shared shell look (dark sidebar, gold accents) */
+.card { border-color: #e4dfd4; border-radius: 16px; box-shadow: 0 10px 30px rgb(28 31 27 / 0.05); }
+.filterBtn { min-height: 38px; }
+.filterActive { background: #887044; border-color: #887044; }
+.filterBtn:focus-visible,
+.btn:focus-visible,
+.ghost:focus-visible,
+.primary:focus-visible { outline: 2px solid #887044; outline-offset: 2px; }
+.btn { min-height: 36px; }
+.btnConfirm { background: #2f6f4f; }
+.btnPropose { background: #887044; }
+.btnCancel { background: #fff; color: #8b3428; box-shadow: inset 0 0 0 1px #e0c7c2; }
+.btnCancel:hover { background: #fff7f5; filter: none; }
+.primary { background: #887044; }
+.calendarLink { background: #887044; }
+.table thead th { color: #6b5a33; }
+
+/* Mobile: tables become stacked cards (no horizontal page scroll) */
+@media (max-width: 760px) {
+  .stackTable,
+  .stackTable tbody,
+  .stackTable tr,
+  .stackTable td { display: block; width: 100%; min-width: 0; box-sizing: border-box; }
+  .stackTable thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .stackTable caption { display: none; }
+  .stackTable tbody tr { padding: 12px 14px; border-top: 1px solid #ece8df; }
+  .stackTable tbody tr:first-child { border-top: 0; }
+  .stackTable tbody td { padding: 5px 0; border: 0; display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 10px; overflow-wrap: anywhere; }
+  .stackTable tbody td[data-label]::before {
+    content: attr(data-label);
+    color: #8c877b;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding-top: 2px;
+  }
+  .stackTable tbody td:not([data-label]) { display: block; }
+  .stackTable .actions { flex-wrap: wrap; white-space: normal; }
+  .agendaTable { min-width: 0; }
+  .grid2 { grid-template-columns: 1fr; }
+  .modal { padding: 22px; max-height: calc(100vh - 32px); overflow-y: auto; }
+  .filters { flex-wrap: wrap; }
+}

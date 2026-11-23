@@ -1687,3 +1687,82 @@
     min-width: 0;
   }
 }
+
+/* ---- Redesign (shared shell: dark sidebar, gold accents, white cards) ---- */
+.content {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.sectionHeader { flex-wrap: wrap; }
+.sectionHeader h1 { font-size: clamp(28px, 3.4vw, 38px); }
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  border-radius: 10px;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  text-decoration: none;
+}
+.primaryButton { background: #887044; }
+.primaryButton:hover:not(:disabled) { background: #7a643c; }
+.secondaryButton:hover:not(:disabled) { border-color: #887044; color: #887044; }
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.dangerButton:focus-visible,
+.textButton:focus-visible,
+.statCard:focus-visible { outline: 2px solid #887044; outline-offset: 2px; }
+.error,
+.notice { border-radius: 10px; }
+.record,
+.reviewCard,
+.doctorCard,
+.formConfigCard,
+.reviewForm,
+.statCard,
+.overviewPanel,
+.quickPanel,
+.siteCard,
+.emptyState {
+  border-color: #e4dfd4;
+  border-radius: 16px;
+  background: #fff;
+}
+.statCard { box-shadow: 0 10px 30px rgb(28 31 27 / 0.05); }
+.statAlert {
+  display: inline-flex;
+  width: fit-content;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #fdf3d8;
+  color: #8a6d1a !important;
+  font-weight: 700;
+}
+.statusPill {
+  display: inline-flex;
+  width: fit-content;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #ecebe6;
+  color: #62665f;
+  font-size: 12px;
+  font-weight: 600;
+}
+.status_new { background: #fdf3d8; color: #8a6d1a; }
+.status_read { background: #dcefe3; color: #2f6f4f; }
+
+@media (max-width: 760px) {
+  .sectionHeader { align-items: flex-start; }
+  .headerActions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+  .recordHeading,
+  .reviewMeta,
+  .reviewByline,
+  .cardActions { flex-wrap: wrap; }
+  .record { grid-template-columns: minmax(0, 1fr); }
+  .recordActions { flex-wrap: wrap; }
+  .message,
+  .contactLinks a { overflow-wrap: anywhere; }
+  .pagination { flex-wrap: wrap; justify-content: center; }
+}
