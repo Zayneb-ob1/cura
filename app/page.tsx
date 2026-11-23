@@ -1,5 +1,6 @@
 "use client";
 
+import { useSiteContent } from "@/components/site-content-provider";
 import Image from "next/image";
 import Link from "next/link";
 import { ButtonLink, SectionLabel } from "@/components/buttons";
@@ -88,7 +89,8 @@ export default function HomePage() {
   const { language } = useLanguage();
   const clinicConfig = useSiteSettings();
   const copy = pageCopy[language];
-  const heroLabel = clinicConfig.city ? `${copy.heroLabel} · ${clinicConfig.city}` : copy.heroLabel;
+  const c = useSiteContent();
+  const heroLabel = clinicConfig.city ? `${c("home.heroLabel", copy.heroLabel)} · ${clinicConfig.city}` : c("home.heroLabel", copy.heroLabel);
 
   return (
     <div className="home-page">
@@ -98,9 +100,9 @@ export default function HomePage() {
         <div className="content-shell home-hero__grid">
           <div className="home-hero__content">
             <SectionLabel>{heroLabel}</SectionLabel>
-            <h1>{copy.heroLine1}<span>{copy.heroLine2}</span></h1>
-            <p>{copy.heroCopy}</p>
-            <p className="home-hero__note">{copy.heroNote}</p>
+            <h1>{c("home.heroLine1", copy.heroLine1)}<span>{c("home.heroLine2", copy.heroLine2)}</span></h1>
+            <p>{c("home.heroCopy", copy.heroCopy)}</p>
+            <p className="home-hero__note">{c("home.heroNote", copy.heroNote)}</p>
             <div className="home-hero__actions">
               <ButtonLink href="/rendez-vous">{copy.appointment}</ButtonLink>
             </div>
@@ -125,8 +127,8 @@ export default function HomePage() {
       <section className="home-competences">
         <div className="content-shell">
           <SectionLabel>{copy.careLabel}</SectionLabel>
-          <h2>{copy.careTitle}</h2>
-          <p className="home-competences__subtitle">{copy.careSubtitle}</p>
+          <h2>{c("home.careTitle", copy.careTitle)}</h2>
+          <p className="home-competences__subtitle">{c("home.careSubtitle", copy.careSubtitle)}</p>
           <div className="home-competences__grid">
             {copy.competences.map(([slug, title, text]) => (
               <Link className={`competence-card competence-card--${slug}`} href="/soins" key={slug}>
@@ -147,7 +149,7 @@ export default function HomePage() {
       <section className="home-values">
         <div className="content-shell">
           <SectionLabel>{copy.valuesLabel}</SectionLabel>
-          <h2>{copy.valuesTitle}</h2>
+          <h2>{c("home.valuesTitle", copy.valuesTitle)}</h2>
           <ul className="home-values__grid">
             {copy.values.map((value, index) => (
               <li key={value}>
@@ -160,16 +162,16 @@ export default function HomePage() {
       </section>
 
       <section className="home-question">
-        <h2>{copy.questionTitle}</h2>
-        <p>{copy.questionCopy}</p>
+        <h2>{c("home.questionTitle", copy.questionTitle)}</h2>
+        <p>{c("home.questionCopy", copy.questionCopy)}</p>
         <ButtonLink href="/rendez-vous">{copy.appointment}</ButtonLink>
       </section>
 
       <ReviewsSection label={copy.reviewsLabel} title={copy.reviewsTitle} messages={copy} />
 
       <section className="home-cta">
-        <h2 className="editorial-title">{copy.ctaTitle}</h2>
-        <p>{copy.ctaCopy}</p>
+        <h2 className="editorial-title">{c("home.ctaTitle", copy.ctaTitle)}</h2>
+        <p>{c("home.ctaCopy", copy.ctaCopy)}</p>
         <ButtonLink href="/rendez-vous">{copy.appointment}</ButtonLink>
       </section>
       </main>

@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { SiteContentProvider } from "@/components/site-content-provider";
+import { loadSiteContent } from "@/lib/site-content";
 import { LanguageProvider } from "@/components/language-provider";
 import { SiteSettingsProvider } from "@/components/site-settings-provider";
 import { createPageMetadata, HAS_PUBLIC_SITE_URL, requestLanguage, SITE_NAME, SITE_URL } from "@/lib/seo";
@@ -43,7 +45,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const [language, siteSettings] = await Promise.all([requestLanguage(), loadClinicConfig()]);
+  const [language, siteSettings, siteContent] = await Promise.all([requestLanguage(), loadClinicConfig(), loadSiteContent()]);
   return (
     <html lang={language}>
       <head>
@@ -53,7 +55,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body>
         <a className="skip-link" href="#main-content">Aller au contenu / Naar inhoud</a>
         <SiteSettingsProvider initialSettings={siteSettings}>
-          <LanguageProvider initialLanguage={language}>{children}</LanguageProvider>
+          <LanguageProvider initialLanguage={language}>
+            <SiteContentProvider overrides={siteContent}>{children}</SiteContentProvider>
+          </LanguageProvider>
         </SiteSettingsProvider>
       </body>
     </html>

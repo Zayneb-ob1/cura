@@ -1,5 +1,6 @@
 "use client";
 
+import { useSiteContent } from "@/components/site-content-provider";
 import { FormEvent, Fragment, useEffect, useRef, useState } from "react";
 import { SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
@@ -129,6 +130,7 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
   const { language } = useLanguage();
   const clinicConfig = useSiteSettings();
   const copy = pageCopy[language];
+  const c = useSiteContent();
   const treatments = treatmentsByLanguage[language];
   const [care, setCare] = useState("");
   const [submissionState, setSubmissionState] = useState<"idle" | "sending" | "success" | "error">("idle");
@@ -228,13 +230,13 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
       {withContactForm ? (
         <>
           {/* Contact page (design): meet us, contact form, map. */}
-          <PageHero title={copy.contactHeroTitle} accent={copy.contactHeroAccent} text={copy.contactHeroCopy} photo="/images/rdv-hero.webp" />
+          <PageHero title={c("contact.heroTitle", copy.contactHeroTitle)} accent={c("contact.heroAccent", copy.contactHeroAccent)} text={c("contact.heroCopy", copy.contactHeroCopy)} photo="/images/rdv-hero.webp" />
 
           <section className="booking-intro">
             <div className="content-shell split-intro split-intro--top">
               <div>
                 <SectionLabel>{copy.label}</SectionLabel>
-                <h2>{copy.contactIntroTitle}</h2>
+                <h2>{c("contact.introTitle", copy.contactIntroTitle)}</h2>
             <div className="booking-intro__actions">
               {clinicConfig.hasPhone && <a className="button-link button-link--green" href={`tel:${clinicConfig.phone}`}>{copy.callClinic}</a>}
               {/* Opens the site contact form: a mailto: link depends on the phone's default mail app. */}
@@ -266,12 +268,12 @@ export function AppointmentView({ withContactForm = false }: { withContactForm?:
         </>
       ) : (
         <>
-          <PageHero title={<>{copy.heroLine1}<br />{copy.heroChez} <em>{copy.heroLine2}</em></>} text={copy.heroCopy} photo="/images/rdv-hero.webp" />
+          <PageHero title={<>{c("rdv.heroLine1", copy.heroLine1)}<br />{copy.heroChez} <em>{copy.heroLine2}</em></>} text={c("rdv.heroCopy", copy.heroCopy)} photo="/images/rdv-hero.webp" />
 
           {/* Appointment page (design): the booking form first, then practical info and reviews. */}
           <section className="content-shell appointment-layout" id="reserver">
             <SectionLabel>{copy.label}</SectionLabel>
-            <h2 className="appointment-layout__title">{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || copy.bookNow}</h2>
+            <h2 className="appointment-layout__title">{(language === "fr" ? formConfig?.titleFr : formConfig?.titleNl) || c("rdv.bookNow", copy.bookNow)}</h2>
             <form className="booking-form" onSubmit={submitAppointment} aria-busy={submissionState === "sending"} ref={formRef}>
               <div className="booking-form__step" hidden={step !== 1}>
                 <div className="booking-form__row">

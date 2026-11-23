@@ -1,5 +1,6 @@
 "use client";
 
+import { useSiteContent } from "@/components/site-content-provider";
 import Image from "next/image";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { SectionLabel } from "@/components/buttons";
@@ -76,6 +77,7 @@ function richText(text: string) {
 export default function SoinsPage() {
   const { language } = useLanguage();
   const copy = pageCopy[language];
+  const c = useSiteContent();
 
   const listRef = useRef<HTMLDivElement>(null);
   // Only one act open at a time: opening one closes the others.
@@ -106,9 +108,9 @@ export default function SoinsPage() {
       <SiteHeader />
       <main>
         <PageHero
-          title={copy.heroLine1}
-          accent={copy.heroLine2}
-          text={copy.heroCopy}
+          title={c("soins.heroLine1", copy.heroLine1)}
+          accent={c("soins.heroLine2", copy.heroLine2)}
+          text={c("soins.heroCopy", copy.heroCopy)}
           action={{ href: "/rendez-vous", label: copy.appointment }}
           photo="/images/competences/soins-hero.webp"
         />
@@ -117,8 +119,8 @@ export default function SoinsPage() {
           <div className="content-shell care-acts__grid">
             <div className="care-acts__intro">
               <SectionLabel>{copy.label}</SectionLabel>
-              <h2>{copy.title}</h2>
-              <p>{copy.subtitle}</p>
+              <h2>{c("soins.title", copy.title)}</h2>
+              <p>{c("soins.subtitle", copy.subtitle)}</p>
               <Image className="care-acts__watermark" src="/brand/cura-tooth.png" alt="" width={656} height={784} sizes="30vw" aria-hidden="true" />
             </div>
             <div className="care-acts__list" ref={listRef}>
@@ -145,7 +147,7 @@ export default function SoinsPage() {
           </div>
         </section>
 
-        <PageCta title={copy.ctaTitle} text={copy.ctaCopy} action={{ href: "/rendez-vous", label: copy.appointment }} />
+        <PageCta title={copy.ctaTitle} text={c("soins.ctaCopy", copy.ctaCopy)} action={{ href: "/rendez-vous", label: copy.appointment }} />
       </main>
       <SiteFooter />
     </div>

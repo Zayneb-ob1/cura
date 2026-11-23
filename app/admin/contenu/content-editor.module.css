@@ -1,0 +1,176 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.intro,
+.note {
+  margin: 0;
+  color: #5f625d;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.error {
+  color: #8b3428;
+  font-size: 14px;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tabs button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid #ddd6c8;
+  border-radius: 999px;
+  background: #fff;
+  color: #353834;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tabs button[aria-selected="true"] {
+  border-color: #887044;
+  background: #887044;
+  color: #fff;
+}
+
+.group {
+  padding: 24px;
+  border: 1px solid #ebe6db;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.groupHeader {
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.groupHeader h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.groupHeader a {
+  color: #806838;
+  font-size: 14px;
+}
+
+.field {
+  padding: 18px 0;
+  border-top: 1px solid #f0ece3;
+}
+
+.label {
+  margin: 0 0 10px;
+  color: #0b0c0b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input > span {
+  color: #887044;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.input input,
+.input textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #d6d0c3;
+  border-radius: 8px;
+  background: #fcfbf7;
+  color: #1a1a1a;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.input textarea {
+  resize: vertical;
+}
+
+.input input:focus,
+.input textarea:focus {
+  outline: 2px solid #b08a3e;
+  outline-offset: 1px;
+}
+
+.input input::placeholder,
+.input textarea::placeholder {
+  color: #a4a39d;
+}
+
+.reset {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #806838;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.actions {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.save {
+  min-height: 44px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 8px;
+  background: #887044;
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.save:disabled {
+  opacity: 0.6;
+}
+
+@media (max-width: 720px) {
+  .group {
+    padding: 18px 14px;
+  }
+
+  .pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

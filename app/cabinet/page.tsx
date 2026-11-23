@@ -1,5 +1,6 @@
 "use client";
 
+import { useSiteContent } from "@/components/site-content-provider";
 import { SectionLabel } from "@/components/buttons";
 import { useLanguage } from "@/components/language-provider";
 import { PageCta, PageHero } from "@/components/page-hero";
@@ -57,15 +58,16 @@ export default function CabinetPage() {
   const { language } = useLanguage();
   const clinicConfig = useSiteSettings();
   const copy = pageCopy[language];
+  const c = useSiteContent();
 
   return (
     <div className="cabinet-page">
       <SiteHeader />
       <main>
         <PageHero
-          title={copy.heroTitle}
+          title={c("cabinet.heroTitle", copy.heroTitle)}
           accent={clinicConfig.city ? `${copy.heroIn} ${clinicConfig.city.toUpperCase()}` : undefined}
-          text={copy.heroCopy}
+          text={c("cabinet.heroCopy", copy.heroCopy)}
           action={{ href: "/rendez-vous", label: copy.appointment }}
         />
 
@@ -74,9 +76,9 @@ export default function CabinetPage() {
             <div className="split-intro">
               <div>
                 <SectionLabel>{copy.teamLabel}</SectionLabel>
-                <h2>{copy.teamTitle}</h2>
+                <h2>{c("cabinet.teamTitle", copy.teamTitle)}</h2>
               </div>
-              <p>{copy.teamCopy}</p>
+              <p>{c("cabinet.teamCopy", copy.teamCopy)}</p>
             </div>
             <InfoCards practicalAction={{ href: "/rendez-vous", label: copy.appointment }} />
           </div>
@@ -101,7 +103,7 @@ export default function CabinetPage() {
           <div className="content-shell">
             <article className="info-row">
               <h2>{copy.reasonsTitle}</h2>
-              <div><p>{copy.reasonsIntro}</p><ul>{copy.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></div>
+              <div><p>{c("cabinet.reasonsIntro", copy.reasonsIntro)}</p><ul>{copy.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></div>
             </article>
             <article className="info-row">
               <h2>{copy.alsoTitle}</h2>
